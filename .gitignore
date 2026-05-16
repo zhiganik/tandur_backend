@@ -1,0 +1,24 @@
+# Secrets — NEVER commit
+.env
+.env.*
+appsettings.Local.json
+
+# Build output
+**/bin/
+**/obj/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vs/
+.idea/
+.claude/
+*.user
+*.suo
+
+# EF
+*.db
+*.db-shm
+*.db-wal
