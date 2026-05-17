@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Core.Domain.Constants;
 using Core.Domain.Entities;
 using Core.DTOs.Users;
@@ -33,6 +34,24 @@ public class UsersController(
             .ToListAsync();
 
         return Ok(users);
+    }
+
+    [HttpPut("me")]
+    public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateProfileRequest request)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var user = await userManager.FindByIdAsync(userId!);
+        if (user is null) return NotFound();
+
+        user.FirstName = request.FirstName;
+        user.LastName = request.LastName;
+        user.PhoneNumber = request.PhoneNumber;
+        user.PhoneNumberConfirmed = true;
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+            return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+
+        return NoContent();
     }
 
     [HttpDelete("{id}")]

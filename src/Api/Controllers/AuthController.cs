@@ -81,8 +81,14 @@ public class AuthController(
         if (session is null)
             return Unauthorized(new { message = "Session expired. Please start over." });
 
-        if (session.Email is not null && await userManager.FindByEmailAsync(session.Email) is not null)
-            return Conflict(new { message = "An account with this email already exists." });
+        if (session.Email is not null && await userManager.FindByEmailAsync(session.Email) is { } existingUser)
+        {
+            if (!string.IsNullOrEmpty(existingUser.PhoneNumber) && existingUser.PhoneNumber != session.Phone)
+                return Conflict(new { message = "An account with this email already exists." });
+
+            await otpSessionService.InvalidateAsync(request.SessionToken);
+            return Ok(await IssueTokensAsync(existingUser));
+        }
 
         var nameParts = request.FullName.Trim().Split(' ', 2);
         var user = new AppUser

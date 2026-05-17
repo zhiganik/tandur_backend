@@ -2,6 +2,8 @@
 using Core.Domain.Constants;
 using Core.Domain.Entities;
 using Core.DTOs.Auth.Validators;
+using Core.DTOs.Users.Validators;
+using Core.Interfaces;
 using Core.Interfaces.Services;
 using Core.Services;
 using FluentValidation;
@@ -22,7 +24,7 @@ public static class DependencyConfig
     {
         services.AddControllers();
         services.AddFluentValidationAutoValidation();
-        services.AddValidatorsFromAssemblyContaining<AdminLoginRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<ICoreReference>();
 
         return services
             .AddSerilogLogging(configuration)
