@@ -79,6 +79,20 @@ git pull
 docker compose up -d --build
 ```
 
+If you updated `.env` locally, copy it to the server first:
+
+```bash
+scp .env tandur:/home/deploy/app/.env
+```
+
+Then redeploy:
+
+```bash
+ssh tandur
+cd /home/deploy/app
+docker compose up -d --build
+```
+
 ### Creating admins on the server
 
 ```bash

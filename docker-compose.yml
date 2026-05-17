@@ -1,7 +1,9 @@
 services:
 
   api:
-    build: .
+    build:
+      context: .
+      target: api
     container_name: tandur_api
     restart: always
     env_file:
