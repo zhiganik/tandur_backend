@@ -37,11 +37,17 @@ public static class DependencyConfig
 
     private static IServiceCollection AddSerilogLogging(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSerilog((services, lc) => lc
-            .ReadFrom.Configuration(configuration)
-            .ReadFrom.Services(services)
-            .Enrich.FromLogContext()
-            .WriteTo.Console());
+        services.AddSerilog((sp, lc) =>
+        {
+            lc.ReadFrom.Configuration(configuration)
+              .ReadFrom.Services(sp)
+              .Enrich.FromLogContext()
+              .WriteTo.Console();
+
+            var seqUrl = configuration["Seq:ServerUrl"];
+            if (!string.IsNullOrEmpty(seqUrl))
+                lc.WriteTo.Seq(seqUrl);
+        });
 
         return services;
     }

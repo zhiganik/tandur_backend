@@ -28,6 +28,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      seq:
+        condition: service_started
     networks:
       - internal
 
@@ -86,6 +88,19 @@ services:
     profiles:
       - tools
 
+  seq:
+    image: datalust/seq:latest
+    container_name: tandur_seq
+    restart: always
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_ADMINPASSWORD=${SEQ_PASSWORD}
+      - BASE_URI=${SEQ_BASE_URI}
+    volumes:
+      - seq_data:/data
+    networks:
+      - internal
+
   nginx:
     image: nginx:alpine
     container_name: tandur_nginx
@@ -105,6 +120,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  seq_data:
 
 networks:
   internal:
