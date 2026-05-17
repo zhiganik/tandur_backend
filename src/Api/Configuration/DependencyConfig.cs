@@ -4,11 +4,12 @@ using Core.Domain.Entities;
 using Core.DTOs.Auth.Validators;
 using Core.DTOs.Users.Validators;
 using Core.Interfaces;
-using Core.Interfaces.Services;
+using Core.Interfaces.Repositories;
 using Core.Services;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Infrastructure.Persistence;
+using Infrastructure.Persistence.Repositories;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -100,6 +101,8 @@ public static class DependencyConfig
         services.AddScoped<IOtpService, RedisOtpService>();
         services.AddScoped<IOtpSender, ConsoleOtpSender>();
         services.AddScoped<IOtpSessionService, RedisOtpSessionService>();
+        services.AddScoped<IRestaurantRepository, RestaurantRepository>();
+        services.AddScoped<IRestaurantService, RestaurantService>();
         return services;
     }
 

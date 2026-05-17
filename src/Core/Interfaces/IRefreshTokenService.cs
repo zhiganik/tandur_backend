@@ -1,4 +1,4 @@
-namespace Core.Interfaces.Services;
+namespace Core.Interfaces;
 
 public interface IRefreshTokenService
 {

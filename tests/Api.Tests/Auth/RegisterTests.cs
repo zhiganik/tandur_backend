@@ -1,10 +1,10 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Api.Controllers;
 using Core.Domain.Constants;
 using Core.Domain.Entities;
 using Core.DTOs.Auth;
-using Core.Interfaces.Services;
+using Core.Interfaces;
 using Core.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
