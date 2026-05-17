@@ -15,8 +15,12 @@ public static class AppConfig
             await ctx.Response.WriteAsJsonAsync(new { message = "An unexpected error occurred." });
         }));
 
-        app.UseSwagger();
-        app.UseSwaggerUI();
+        app.UseSwagger(c => c.RouteTemplate = "api/swagger/{documentName}/swagger.json");
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/api/swagger/v1/swagger.json", "v1");
+            c.RoutePrefix = "api/swagger";
+        });
 
         app.UseHttpsRedirection();
         app.UseAuthentication();
