@@ -20,7 +20,7 @@ EXPOSE 8080
 ENTRYPOINT ["dotnet", "Api.dll"]
 
 # Stage 3: CLI runtime
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS cli
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS cli
 WORKDIR /app
 COPY --from=build /app/cli .
 ENTRYPOINT ["dotnet", "Cli.dll"]
