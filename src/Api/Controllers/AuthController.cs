@@ -86,6 +86,7 @@ public class AuthController(
             if (!string.IsNullOrEmpty(existingUser.PhoneNumber) && existingUser.PhoneNumber != session.Phone)
                 return Conflict(new { message = "An account with this email already exists." });
 
+            await userManager.AddToRoleAsync(existingUser, TandurRoles.User);
             await otpSessionService.InvalidateAsync(request.SessionToken);
             return Ok(await IssueTokensAsync(existingUser));
         }
