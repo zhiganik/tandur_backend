@@ -86,7 +86,9 @@ public class AuthController(
             if (!string.IsNullOrEmpty(existingUser.PhoneNumber) && existingUser.PhoneNumber != session.Phone)
                 return Conflict(new { message = "An account with this email already exists." });
 
-            await userManager.AddToRoleAsync(existingUser, TandurRoles.User);
+            if (!await userManager.IsInRoleAsync(existingUser, TandurRoles.User))
+                await userManager.AddToRoleAsync(existingUser, TandurRoles.User);
+
             await otpSessionService.InvalidateAsync(request.SessionToken);
             return Ok(await IssueTokensAsync(existingUser));
         }
@@ -155,7 +157,7 @@ public class AuthController(
         var roles = await userManager.GetRolesAsync(user);
         var expiry = jwtService.GetExpiry();
         var accessToken = jwtService.GenerateToken(user, roles);
-        var refreshToken = await refreshTokenService.CreateAsync(user.Id, MobileRefreshExpiry);
+        var refreshToken = await refreshTokenService.CreateAsync(user.Id, MobileRefreshExpiry, ClientTypes.Mobile);
         return new TokenResponse(accessToken, refreshToken, expiry);
     }
 }

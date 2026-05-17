@@ -100,7 +100,7 @@ public class AdminAuthController(
     {
         var expiry = jwtService.GetExpiry();
         var accessToken = jwtService.GenerateToken(user, roles);
-        var refreshToken = await refreshTokenService.CreateAsync(user.Id, AdminRefreshExpiry);
+        var refreshToken = await refreshTokenService.CreateAsync(user.Id, AdminRefreshExpiry, ClientTypes.Web);
         return new TokenResponse(accessToken, refreshToken, expiry);
     }
 }
