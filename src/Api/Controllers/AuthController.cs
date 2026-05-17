@@ -90,14 +90,14 @@ public class AuthController(
             return Ok(await IssueTokensAsync(existingUser));
         }
 
-        var nameParts = request.FullName.Trim().Split(' ', 2);
+        var (firstName, lastName) = SplitFullName(request.FullName);
         var user = new AppUser
         {
             UserName = session.Email,
             Email = session.Email,
             PhoneNumber = session.Phone,
-            FirstName = nameParts[0],
-            LastName = nameParts.Length > 1 ? nameParts[1] : string.Empty,
+            FirstName = firstName,
+            LastName = lastName,
             PhoneNumberConfirmed = true,
             EmailConfirmed = true,
         };
@@ -108,7 +108,6 @@ public class AuthController(
 
         await userManager.AddToRoleAsync(user, TandurRoles.User);
         await otpSessionService.InvalidateAsync(request.SessionToken);
-
         return Ok(await IssueTokensAsync(user));
     }
 
@@ -142,6 +141,12 @@ public class AuthController(
             return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
 
         return NoContent();
+    }
+
+    private static (string firstName, string lastName) SplitFullName(string fullName)
+    {
+        var parts = fullName.Trim().Split(' ', 2);
+        return (parts[0], parts.Length > 1 ? parts[1] : string.Empty);
     }
 
     private async Task<TokenResponse> IssueTokensAsync(AppUser user)
