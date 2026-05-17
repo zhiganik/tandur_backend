@@ -6,7 +6,7 @@ Copy `.env.example` to `.env` and fill in the values, then:
 
 ```bash
 # Start infrastructure (Postgres + Redis only)
-docker-compose up -d postgres redis
+docker compose up -d postgres redis
 
 # Run API locally
 dotnet run --project src/Api
@@ -18,7 +18,7 @@ Migrations and role seeding run automatically on every API startup.
 
 ```bash
 # Stop infrastructure
-docker-compose down
+docker compose down
 
 # Build
 dotnet build src/Api/Api.csproj
@@ -76,7 +76,7 @@ ssh tandur
 cd /home/deploy/app
 
 git pull
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ### Creating admins on the server
@@ -86,10 +86,10 @@ ssh tandur
 cd /home/deploy/app
 
 # Admin
-docker-compose run --rm cli create-admin <email> <username>
+docker compose run --rm cli create-admin <email> <username>
 
 # SuperAdmin
-docker-compose run --rm cli create-admin <email> <username> --super
+docker compose run --rm cli create-admin <email> <username> --super
 ```
 
 The generated password is printed once — save it immediately.
