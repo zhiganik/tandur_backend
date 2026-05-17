@@ -53,7 +53,7 @@ Entities are **rich domain models** — business logic lives on the entity, not 
 **Implementations**:
 - `Core/Services/` — services with no infrastructure dependencies (no EF, no Redis). `JwtService`, `RestaurantService` live here.
 - `Infrastructure/Services/` — services that require infrastructure (Redis-backed OTP, refresh tokens).
-- `Infrastructure/Repositories/` — repository implementations.
+- `Infrastructure/Persistence/Repositories/` — repository implementations.
 
 The rule: if a service only depends on Core interfaces and DTOs, it belongs in `Core/Services/`. If it needs EF, Redis, or any external client, it belongs in `Infrastructure/Services/`.
 
