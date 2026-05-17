@@ -1,6 +1,8 @@
 # Secrets — NEVER commit
 .env
-.env.*
+.env.local
+.env.production
+.env.staging
 appsettings.Local.json
 
 # Build output
