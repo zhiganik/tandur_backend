@@ -83,7 +83,7 @@ public class AuthController(
 
         if (session.Email is not null && await userManager.FindByEmailAsync(session.Email) is { } existingUser)
         {
-            if (!string.IsNullOrEmpty(existingUser.PhoneNumber) && existingUser.PhoneNumber != session.Phone)
+            if (existingUser.PhoneNumber != session.Phone)
                 return Conflict(new { message = "An account with this email already exists." });
 
             if (!await userManager.IsInRoleAsync(existingUser, TandurRoles.User))
