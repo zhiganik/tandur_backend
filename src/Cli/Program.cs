@@ -63,7 +63,7 @@ var user = new AppUser
 {
     UserName = userName,
     Email = email,
-    FirstName = isSuperAdmin ? TandurRoles.SuperAdmin : TandurRoles.Admin,
+    FirstName = userName,
     LastName = string.Empty,
     EmailConfirmed = true,
     MustChangePassword = true,
