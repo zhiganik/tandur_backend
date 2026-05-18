@@ -11,4 +11,9 @@ public interface IUserRepository
     Task<IReadOnlyList<string>>                     GetRolesAsync(string userId);
     Task<(bool Success, string[] Errors)>           UpdateAsync(AppUser user);
     Task<bool>                                      DeleteAsync(string userId);
+    Task<AppUser?>                                  GetByEmailAsync(string email);
+    Task<AppUser?>                                  GetByPhoneAsync(string phone, string? excludeUserId = null);
+    Task<(bool Success, string[] Errors)>           SetConfirmedPhoneAsync(string userId, string newPhone);
+    Task<(bool Success, string[] Errors)>           SetConfirmedEmailAsync(string userId, string newEmail);
+    Task<(bool Success, string[] Errors)>           SetBirthdayAsync(string userId, DateTime? birthday);
 }

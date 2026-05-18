@@ -103,7 +103,9 @@ public static class DependencyConfig
         services.AddScoped<JwtService>();
         services.AddScoped<IRefreshTokenService, RedisRefreshTokenService>();
         services.AddScoped<IOtpService, RedisOtpService>();
+        services.AddScoped<IOtpRateLimiter, RedisOtpRateLimiter>();
         services.AddScoped<IOtpSender, ConsoleOtpSender>();
+        services.AddScoped<IPasswordResetSender, ConsolePasswordResetSender>();
         services.AddScoped<IOtpSessionService, RedisOtpSessionService>();
         services.AddScoped<IRestaurantRepository, RestaurantRepository>();
         services.AddScoped<IRestaurantService, RestaurantService>();

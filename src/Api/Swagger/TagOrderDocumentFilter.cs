@@ -7,7 +7,9 @@ public class TagOrderDocumentFilter : IDocumentFilter
 {
     private static readonly Dictionary<string, string> Tags = new()
     {
-        ["Auth"]                  = "Mobile passwordless authentication — OTP via phone or email",
+        ["Auth › Session"]        = "Anonymous OTP session flow — phone and email verification before login or register",
+        ["Auth"]                  = "Client authentication — login, register, token refresh",
+        ["Me"]                    = "Current user profile — shared by mobile and admin users",
         ["Restaurants"]           = "Browse restaurants (mobile, read-only)",
         ["Categories"]            = "Browse menu categories (mobile, read-only)",
         ["Menu"]                  = "Browse menu items (mobile, read-only)",

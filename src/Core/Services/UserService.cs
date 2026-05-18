@@ -1,5 +1,6 @@
 using Core.Domain.Entities;
 using Core.DTOs.Common;
+using Core.DTOs.Me;
 using Core.DTOs.Users;
 using Core.Interfaces;
 using Core.Interfaces.Repositories;
@@ -43,6 +44,45 @@ public class UserService(IUserRepository repository, IRefreshTokenService refres
         return await repository.DeleteAsync(userId);
     }
 
+    public async Task<MeDto?> GetMeAsync(string userId)
+    {
+        var user = await repository.GetByIdAsync(userId);
+        if (user is null) return null;
+        var roles = await repository.GetRolesAsync(userId);
+        return ToMeDto(user, roles);
+    }
+
+    public async Task<UserUpdateResult> UpdateNameAsync(string userId, string firstName, string lastName)
+    {
+        var user = await repository.GetByIdAsync(userId);
+        if (user is null) return new UserUpdateResult.NotFound();
+        user.FirstName = firstName;
+        user.LastName  = lastName;
+        var (success, errors) = await repository.UpdateAsync(user);
+        return success ? new UserUpdateResult.Success() : new UserUpdateResult.Failed(errors);
+    }
+
+    public async Task<UserUpdateResult> SetVerifiedPhoneAsync(string userId, string newPhone)
+    {
+        var (success, errors) = await repository.SetConfirmedPhoneAsync(userId, newPhone);
+        if (!success && errors.Contains("User not found.")) return new UserUpdateResult.NotFound();
+        return success ? new UserUpdateResult.Success() : new UserUpdateResult.Failed(errors);
+    }
+
+    public async Task<UserUpdateResult> SetVerifiedEmailAsync(string userId, string newEmail)
+    {
+        var (success, errors) = await repository.SetConfirmedEmailAsync(userId, newEmail);
+        if (!success && errors.Contains("User not found.")) return new UserUpdateResult.NotFound();
+        return success ? new UserUpdateResult.Success() : new UserUpdateResult.Failed(errors);
+    }
+
+    public async Task<UserUpdateResult> SetBirthdayAsync(string userId, DateTime? birthday)
+    {
+        var (success, errors) = await repository.SetBirthdayAsync(userId, birthday);
+        if (!success && errors.Contains("User not found.")) return new UserUpdateResult.NotFound();
+        return success ? new UserUpdateResult.Success() : new UserUpdateResult.Failed(errors);
+    }
+
     private static UserDto ToDto(AppUser user, IReadOnlyList<string> roles) => new()
     {
         Id                   = user.Id,
@@ -69,4 +109,17 @@ public class UserService(IUserRepository repository, IRefreshTokenService refres
         if (string.IsNullOrEmpty(phone) || phone.Length < 7) return phone;
         return phone[..3] + new string('*', phone.Length - 6) + phone[^3..];
     }
+
+    private static MeDto ToMeDto(AppUser user, IReadOnlyList<string> roles) => new(
+        Id:                   user.Id,
+        FirstName:            user.FirstName,
+        LastName:             user.LastName,
+        Email:                user.Email,
+        EmailConfirmed:       user.EmailConfirmed,
+        Phone:                user.PhoneNumber,
+        PhoneNumberConfirmed: user.PhoneNumberConfirmed,
+        DateOfBirth:          user.DateOfBirth,
+        Roles:                roles,
+        CreatedAt:            user.CreatedAt
+    );
 }

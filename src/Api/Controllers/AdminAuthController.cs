@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Core.Domain.Constants;
 using Core.Domain.Entities;
+using Core.Domain.Enums;
 using Core.DTOs.Auth;
 using Core.Interfaces;
 using Core.Services;
@@ -20,12 +21,8 @@ public class AdminAuthController(
     UserManager<AppUser> userManager,
     JwtService jwtService,
     IRefreshTokenService refreshTokenService,
-    IAuthorizationService authorizationService,
-    IConfiguration configuration) : ControllerBase
+    IAuthorizationService authorizationService) : ControllerBase
 {
-    private TimeSpan AdminRefreshExpiry =>
-        TimeSpan.FromDays(int.Parse(configuration["Jwt:AdminRefreshExpiryDays"] ?? "2"));
-
     [HttpPost("login")]
     [SwaggerOperation(Summary = "Admin login with email and password")]
     [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
@@ -81,25 +78,15 @@ public class AdminAuthController(
         return Ok(await IssueTokensAsync(user, roles));
     }
 
-    [HttpPost("refresh")]
-    [SwaggerOperation(Summary = "Rotate admin refresh token — returns a new JWT pair")]
-    [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
+    [HttpPost("logout")]
+    [Authorize(Policy = TandurPolicies.AdminPanel)]
+    [SwaggerOperation(Summary = "Logout — revoke current web refresh token")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
+    public async Task<IActionResult> Logout([FromBody] RefreshRequest request)
     {
-        var userId = await refreshTokenService.GetUserIdAsync(request.RefreshToken);
-        if (userId is null)
-            return Unauthorized(new { message = "Invalid or expired refresh token." });
-
-        var user = await userManager.FindByIdAsync(userId);
-        if (user is null) return Unauthorized(new { message = "User not found." });
-
-        var roles = await userManager.GetRolesAsync(user);
-        if (!await HasAdminAccessAsync(roles))
-            return Forbid();
-
         await refreshTokenService.RevokeAsync(request.RefreshToken);
-        return Ok(await IssueTokensAsync(user, roles));
+        return NoContent();
     }
 
     private async Task<bool> HasAdminAccessAsync(IList<string> roles)
@@ -112,9 +99,9 @@ public class AdminAuthController(
 
     private async Task<TokenResponse> IssueTokensAsync(AppUser user, IList<string> roles)
     {
-        var expiry = jwtService.GetExpiry();
-        var accessToken = jwtService.GenerateToken(user, roles);
-        var refreshToken = await refreshTokenService.CreateAsync(user.Id, AdminRefreshExpiry, ClientTypes.Web);
+        var expiry       = jwtService.GetExpiry();
+        var accessToken  = jwtService.GenerateToken(user, roles);
+        var refreshToken = await refreshTokenService.CreateAsync(user.Id, ClientType.Web);
         return new TokenResponse(accessToken, refreshToken, expiry);
     }
 }

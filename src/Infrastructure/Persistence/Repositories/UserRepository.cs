@@ -64,4 +64,56 @@ public class UserRepository(AppDbContext db, UserManager<AppUser> userManager) :
 
         return true;
     }
+
+    public Task<AppUser?> GetByEmailAsync(string email) =>
+        userManager.FindByEmailAsync(email)!;
+
+    public Task<AppUser?> GetByPhoneAsync(string phone, string? excludeUserId = null) =>
+        db.Users
+            .Where(u => u.PhoneNumber == phone && (excludeUserId == null || u.Id != excludeUserId))
+            .FirstOrDefaultAsync()!;
+
+    public async Task<(bool Success, string[] Errors)> SetConfirmedPhoneAsync(string userId, string newPhone)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return (false, ["User not found."]);
+
+        var setResult = await userManager.SetPhoneNumberAsync(user, newPhone);
+        if (!setResult.Succeeded)
+            return (false, setResult.Errors.Select(e => e.Description).ToArray());
+
+        // SetPhoneNumberAsync resets PhoneNumberConfirmed — restore it
+        user.PhoneNumberConfirmed = true;
+        var updateResult = await userManager.UpdateAsync(user);
+        return updateResult.Succeeded
+            ? (true, [])
+            : (false, updateResult.Errors.Select(e => e.Description).ToArray());
+    }
+
+    public async Task<(bool Success, string[] Errors)> SetConfirmedEmailAsync(string userId, string newEmail)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return (false, ["User not found."]);
+
+        var token = await userManager.GenerateChangeEmailTokenAsync(user, newEmail);
+        var changeResult = await userManager.ChangeEmailAsync(user, newEmail, token);
+        if (!changeResult.Succeeded)
+            return (false, changeResult.Errors.Select(e => e.Description).ToArray());
+
+        // Ensure EmailConfirmed is true after the OTP-verified change
+        user.EmailConfirmed = true;
+        var updateResult = await userManager.UpdateAsync(user);
+        return updateResult.Succeeded
+            ? (true, [])
+            : (false, updateResult.Errors.Select(e => e.Description).ToArray());
+    }
+
+    public async Task<(bool Success, string[] Errors)> SetBirthdayAsync(string userId, DateTime? birthday)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return (false, ["User not found."]);
+
+        user.DateOfBirth = birthday;
+        return await UpdateAsync(user);
+    }
 }
