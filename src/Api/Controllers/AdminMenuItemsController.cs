@@ -1,6 +1,7 @@
 using Core.Domain.Constants;
 using Core.DTOs.Common;
 using Core.DTOs.MenuItems;
+using Microsoft.AspNetCore.Http;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -81,6 +82,38 @@ public class AdminMenuItemsController(IMenuItemService menuItemService) : Contro
     public async Task<IActionResult> Delete(Guid id)
     {
         var deleted = await menuItemService.DeleteAsync(id);
+        return deleted ? NoContent() : NotFound();
+    }
+
+    [HttpPost("menu/items/{id:guid}/image")]
+    [SwaggerOperation(Summary = "Upload image for a menu item (JPG / PNG / WebP, max 5 MB)")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType<ImageUploadResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
+    {
+        var allowed = new[] { "image/jpeg", "image/png", "image/webp" };
+        if (!allowed.Contains(file.ContentType.ToLowerInvariant()))
+            return BadRequest(new { message = "Only JPG, PNG, and WebP images are accepted." });
+
+        if (file.Length > 5 * 1024 * 1024)
+            return BadRequest(new { message = "File size must not exceed 5 MB." });
+
+        using var stream = file.OpenReadStream();
+        var result = await menuItemService.UploadImageAsync(id, stream, file.ContentType, file.FileName);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpDelete("menu/items/{id:guid}/image")]
+    [SwaggerOperation(Summary = "Remove image from a menu item")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteImage(Guid id)
+    {
+        var deleted = await menuItemService.DeleteImageAsync(id);
         return deleted ? NoContent() : NotFound();
     }
 }

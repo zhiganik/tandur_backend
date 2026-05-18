@@ -8,6 +8,7 @@ using Core.Interfaces.Repositories;
 using Core.Services;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Infrastructure.Configuration;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Services;
@@ -35,6 +36,7 @@ public static class DependencyConfig
             .AddAuthentication(configuration)
             .AddPostgres(configuration)
             .AddRedis(configuration)
+            .AddR2Storage(configuration)
             .AddAppServices();
     }
 
@@ -111,6 +113,15 @@ public static class DependencyConfig
         services.AddScoped<IMenuItemService, MenuItemService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserService, UserService>();
+        return services;
+    }
+
+    private static IServiceCollection AddR2Storage(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<R2Options>(configuration.GetSection("R2"));
+
+        services.AddSingleton<IStorageService, R2StorageService>();
+
         return services;
     }
 

@@ -7,7 +7,7 @@ using Core.Interfaces.Repositories;
 
 namespace Core.Services;
 
-public class MenuItemService(IMenuItemRepository menuItemRepo, ICategoryRepository categoryRepo) : IMenuItemService
+public class MenuItemService(IMenuItemRepository menuItemRepo, ICategoryRepository categoryRepo, IStorageService storageService) : IMenuItemService
 {
     public async Task<MenuDto> GetMenuAsync(Guid restaurantId, PaginationQuery query)
     {
@@ -111,6 +111,45 @@ public class MenuItemService(IMenuItemRepository menuItemRepo, ICategoryReposito
     }
 
     public Task<bool> DeleteAsync(Guid id) => menuItemRepo.SoftDeleteAsync(id);
+
+    public async Task<ImageUploadResult?> UploadImageAsync(Guid id, Stream stream, string contentType, string fileName)
+    {
+        var item = await menuItemRepo.GetByIdAsync(id);
+        if (item is null) return null;
+
+        if (item.ImageUrl is not null)
+            await storageService.DeleteAsync(storageService.ExtractKey(item.ImageUrl));
+
+        var ext = contentType switch
+        {
+            "image/jpeg" => "jpg",
+            "image/png"  => "png",
+            "image/webp" => "webp",
+            _            => "jpg",
+        };
+        var key      = $"menu-items/{id}/{Guid.NewGuid()}.{ext}";
+        var imageUrl = await storageService.UploadAsync(key, stream, contentType);
+
+        item.ImageUrl = imageUrl;
+        await menuItemRepo.UpdateAsync(item);
+
+        return new ImageUploadResult { ImageUrl = imageUrl };
+    }
+
+    public async Task<bool> DeleteImageAsync(Guid id)
+    {
+        var item = await menuItemRepo.GetByIdAsync(id);
+        if (item is null) return false;
+
+        if (item.ImageUrl is not null)
+        {
+            await storageService.DeleteAsync(storageService.ExtractKey(item.ImageUrl));
+            item.ImageUrl = null;
+            await menuItemRepo.UpdateAsync(item);
+        }
+
+        return true;
+    }
 
     private static CategoryDto ToCategoryDto(Category c) => new()
     {

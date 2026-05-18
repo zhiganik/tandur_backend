@@ -1,6 +1,7 @@
 using Core.Domain.Entities;
 using Core.DTOs.Common;
 using Core.DTOs.MenuItems;
+using Core.Interfaces;
 using Core.Interfaces.Repositories;
 using Core.Services;
 using Moq;
@@ -10,9 +11,10 @@ namespace Api.Tests.MenuItems;
 [TestFixture]
 public class MenuItemServiceTests
 {
-    private Mock<IMenuItemRepository> _menuRepo    = null!;
+    private Mock<IMenuItemRepository> _menuRepo     = null!;
     private Mock<ICategoryRepository> _categoryRepo = null!;
-    private MenuItemService           _service     = null!;
+    private Mock<IStorageService>     _storage      = null!;
+    private MenuItemService           _service      = null!;
 
     private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
 
@@ -21,7 +23,8 @@ public class MenuItemServiceTests
     {
         _menuRepo     = new Mock<IMenuItemRepository>();
         _categoryRepo = new Mock<ICategoryRepository>();
-        _service      = new MenuItemService(_menuRepo.Object, _categoryRepo.Object);
+        _storage      = new Mock<IStorageService>();
+        _service      = new MenuItemService(_menuRepo.Object, _categoryRepo.Object, _storage.Object);
     }
 
     // GetMenuAsync
