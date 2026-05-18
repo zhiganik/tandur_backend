@@ -1,14 +1,11 @@
 using System.Security.Claims;
 using Core.Domain.Constants;
-using Core.Domain.Entities;
 using Core.DTOs.Common;
 using Core.DTOs.Users;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
@@ -18,40 +15,17 @@ namespace Api.Controllers;
 [Authorize(Policy = TandurPolicies.AdminPanel)]
 [Tags("Admin › Users")]
 [Produces("application/json")]
-public class UsersController(
-    UserManager<AppUser> userManager,
-    IRefreshTokenService refreshTokenService) : ControllerBase
+public class UsersController(IUserService userService) : ControllerBase
 {
     [HttpGet]
-    [SwaggerOperation(Summary = "List all users (PII fields are masked)")]
+    [SwaggerOperation(Summary = "List all users with roles (PII fields are masked)")]
     [ProducesResponseType<PagedResult<UserDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetUsers([FromQuery] PaginationQuery query)
     {
-        var total = await userManager.Users.CountAsync();
-        var users = await userManager.Users
-            .OrderBy(u => u.CreatedAt)
-            .Skip((query.Page - 1) * query.Limit)
-            .Take(query.Limit)
-            .Select(u => new UserDto
-            {
-                Id        = u.Id,
-                FirstName = u.FirstName,
-                LastName  = u.LastName,
-                Email     = MaskEmail(u.Email),
-                Phone     = MaskPhone(u.PhoneNumber),
-                CreatedAt = u.CreatedAt,
-            })
-            .ToListAsync();
-
-        return Ok(new PagedResult<UserDto>
-        {
-            Data  = users,
-            Total = total,
-            Page  = query.Page,
-            Limit = query.Limit,
-        });
+        var result = await userService.GetPagedAsync(query);
+        return Ok(result);
     }
 
     [HttpPut("me")]
@@ -59,21 +33,20 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateProfileRequest request)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var user = await userManager.FindByIdAsync(userId!);
-        if (user is null) return NotFound();
+        if (userId is null) return Forbid();
 
-        user.FirstName = request.FirstName;
-        user.LastName = request.LastName;
-        user.PhoneNumber = request.PhoneNumber;
-        user.PhoneNumberConfirmed = true;
-        var result = await userManager.UpdateAsync(user);
-        if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
-
-        return NoContent();
+        var result = await userService.UpdateProfileAsync(userId, request);
+        return result switch
+        {
+            UserUpdateResult.NotFound        => NotFound(),
+            UserUpdateResult.Success         => NoContent(),
+            UserUpdateResult.Failed f        => BadRequest(new { errors = f.Errors }),
+            _                                => StatusCode(500),
+        };
     }
 
     [HttpDelete("{id}")]
@@ -83,28 +56,7 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteUser(string id)
     {
-        var user = await userManager.FindByIdAsync(id);
-        if (user is null) return NotFound();
-
-        await refreshTokenService.RevokeAllForUserAsync(id);
-        var result = await userManager.DeleteAsync(user);
-        if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
-
-        return NoContent();
-    }
-
-    private static string MaskEmail(string? email)
-    {
-        if (string.IsNullOrEmpty(email)) return string.Empty;
-        var at = email.IndexOf('@');
-        if (at <= 1) return email;
-        return email[0] + new string('*', at - 1) + email[at..];
-    }
-
-    private static string MaskPhone(string? phone)
-    {
-        if (string.IsNullOrEmpty(phone) || phone.Length < 7) return phone ?? string.Empty;
-        return phone[..3] + new string('*', phone.Length - 6) + phone[^3..];
+        var deleted = await userService.DeleteAsync(id);
+        return deleted ? NoContent() : NotFound();
     }
 }

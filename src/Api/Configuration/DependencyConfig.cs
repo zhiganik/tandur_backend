@@ -109,6 +109,8 @@ public static class DependencyConfig
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IMenuItemRepository, MenuItemRepository>();
         services.AddScoped<IMenuItemService, MenuItemService>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserService, UserService>();
         return services;
     }
 
