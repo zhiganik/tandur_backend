@@ -1,15 +1,23 @@
-﻿using Core.Interfaces;
+using Core.DTOs.Restaurants;
+using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("api/restaurants")]
 [Authorize]
+[Tags("Restaurants")]
+[Produces("application/json")]
 public class RestaurantsController(IRestaurantService restaurantService) : ControllerBase
 {
     [HttpGet]
+    [SwaggerOperation(Summary = "List active restaurants, optionally sorted by distance")]
+    [ProducesResponseType<List<RestaurantDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] double? lat, [FromQuery] double? lng)
     {
         var restaurants = await restaurantService.GetAllAsync(lat, lng);
@@ -17,6 +25,10 @@ public class RestaurantsController(IRestaurantService restaurantService) : Contr
     }
 
     [HttpGet("{id:guid}")]
+    [SwaggerOperation(Summary = "Get restaurant details by ID")]
+    [ProducesResponseType<RestaurantDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var restaurant = await restaurantService.GetByIdAsync(id);

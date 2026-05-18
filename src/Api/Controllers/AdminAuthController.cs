@@ -1,17 +1,21 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Core.Domain.Constants;
 using Core.Domain.Entities;
 using Core.DTOs.Auth;
 using Core.Interfaces;
 using Core.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("api/admin/auth")]
+[Tags("Admin › Auth")]
+[Produces("application/json")]
 public class AdminAuthController(
     UserManager<AppUser> userManager,
     JwtService jwtService,
@@ -23,6 +27,9 @@ public class AdminAuthController(
         TimeSpan.FromDays(int.Parse(configuration["Jwt:AdminRefreshExpiryDays"] ?? "2"));
 
     [HttpPost("login")]
+    [SwaggerOperation(Summary = "Admin login with email and password")]
+    [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] AdminLoginRequest request)
     {
         var user = await userManager.FindByEmailAsync(request.Email);
@@ -46,6 +53,10 @@ public class AdminAuthController(
 
     [HttpPost("change-password")]
     [Authorize]
+    [SwaggerOperation(Summary = "Change password (required on first login)")]
+    [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
         var scope = User.FindFirstValue("scope");
@@ -71,6 +82,9 @@ public class AdminAuthController(
     }
 
     [HttpPost("refresh")]
+    [SwaggerOperation(Summary = "Rotate admin refresh token — returns a new JWT pair")]
+    [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
     {
         var userId = await refreshTokenService.GetUserIdAsync(request.RefreshToken);

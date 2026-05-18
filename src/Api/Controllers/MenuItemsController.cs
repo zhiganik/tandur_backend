@@ -1,15 +1,23 @@
+using Core.DTOs.MenuItems;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("api")]
 [Authorize]
+[Tags("Menu")]
+[Produces("application/json")]
 public class MenuItemsController(IMenuItemService menuItemService) : ControllerBase
 {
     [HttpGet("restaurants/{restaurantId:guid}/menu")]
+    [SwaggerOperation(Summary = "Get full menu — visible categories + available items")]
+    [ProducesResponseType<MenuDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetMenu(Guid restaurantId)
     {
         var menu = await menuItemService.GetMenuAsync(restaurantId);
@@ -17,6 +25,10 @@ public class MenuItemsController(IMenuItemService menuItemService) : ControllerB
     }
 
     [HttpGet("menu/items/{id:guid}")]
+    [SwaggerOperation(Summary = "Get a single menu item by ID")]
+    [ProducesResponseType<MenuItemDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var item = await menuItemService.GetByIdAsync(id);

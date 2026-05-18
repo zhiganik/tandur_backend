@@ -73,7 +73,9 @@ public static class DependencyConfig
                 Description = "Enter your JWT token"
             });
 
-            c.OperationFilter<Api.Swagger.AuthorizeOperationFilter>();
+            c.EnableAnnotations();
+        c.DocumentFilter<Api.Swagger.TagOrderDocumentFilter>();
+        c.OperationFilter<Api.Swagger.AuthorizeOperationFilter>();
         });
 
         return services;

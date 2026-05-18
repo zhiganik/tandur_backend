@@ -1,17 +1,21 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Core.Domain.Constants;
 using Core.Domain.Entities;
 using Core.DTOs.Auth;
 using Core.Interfaces;
 using Core.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
+[Tags("Auth")]
+[Produces("application/json")]
 public class AuthController(
     UserManager<AppUser> userManager,
     JwtService jwtService,
@@ -29,6 +33,9 @@ public class AuthController(
         TimeSpan.FromDays(int.Parse(configuration["Jwt:RefreshExpiryDays"] ?? "30"));
 
     [HttpPost("phone")]
+    [SwaggerOperation(Summary = "Send OTP to a phone number")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SendPhoneOtp([FromBody] SendPhoneOtpRequest request)
     {
         var code = await otpService.GenerateAsync($"phone:{request.PhoneNumber}", PhoneOtpExpiry);
@@ -37,6 +44,9 @@ public class AuthController(
     }
 
     [HttpPost("phone/verify")]
+    [SwaggerOperation(Summary = "Verify phone OTP — returns a session token")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> VerifyPhoneOtp([FromBody] VerifyPhoneOtpRequest request)
     {
         var valid = await otpService.VerifyAsync($"phone:{request.PhoneNumber}", request.Code);
@@ -48,6 +58,10 @@ public class AuthController(
     }
 
     [HttpPost("email")]
+    [SwaggerOperation(Summary = "Send OTP to email (requires active phone session)")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SendEmailOtp([FromBody] SendEmailOtpRequest request)
     {
         var phone = await otpSessionService.GetPhoneAsync(request.SessionToken);
@@ -60,6 +74,10 @@ public class AuthController(
     }
 
     [HttpPost("email/verify")]
+    [SwaggerOperation(Summary = "Verify email OTP — upgrades the session token")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> VerifyEmailOtp([FromBody] VerifyEmailOtpRequest request)
     {
         var phone = await otpSessionService.GetPhoneAsync(request.SessionToken);
@@ -75,6 +93,11 @@ public class AuthController(
     }
 
     [HttpPost("register")]
+    [SwaggerOperation(Summary = "Complete registration and receive a JWT pair")]
+    [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         var session = await otpSessionService.GetSessionAsync(request.SessionToken);
@@ -115,6 +138,9 @@ public class AuthController(
     }
 
     [HttpPost("refresh")]
+    [SwaggerOperation(Summary = "Rotate refresh token — returns a new JWT pair")]
+    [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
     {
         var userId = await refreshTokenService.GetUserIdAsync(request.RefreshToken);
@@ -130,6 +156,9 @@ public class AuthController(
 
     [HttpDelete("account")]
     [Authorize(Roles = TandurRoles.User)]
+    [SwaggerOperation(Summary = "Delete own account (GDPR)")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DeleteAccount()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
