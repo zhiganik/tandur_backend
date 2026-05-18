@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Start required infrastructure
-docker compose up -d postgres redis
+# Start required infrastructure (Postgres + Redis + Seq)
+docker compose up -d postgres redis seq
 
 # Run API
 dotnet run --project src/Api
@@ -30,6 +30,15 @@ dotnet run --project src/Cli -- create-admin <email> <username> --super
 ```
 
 Copy `.env.example` to `.env` and fill in values before running locally.
+
+## Local URLs
+
+| Service | URL |
+|---------|-----|
+| Swagger UI | http://localhost:5280/api/swagger |
+| Seq logs | http://localhost:5341 |
+| Postgres | localhost:5433 |
+| Redis | localhost:6379 |
 
 ## Architecture
 

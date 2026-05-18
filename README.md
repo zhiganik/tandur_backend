@@ -2,26 +2,46 @@
 
 ## Getting started
 
-Copy `.env.example` to `.env` and fill in the values, then:
+1. Copy `.env.example` to `.env` and fill in the values.
+2. Start infrastructure:
 
 ```bash
-# Start infrastructure (Postgres + Redis only)
-docker compose up -d postgres redis
+docker compose up -d postgres redis seq
+```
 
-# Run API locally
+3. Run the API:
+
+```bash
 dotnet run --project src/Api
 ```
 
 Migrations and role seeding run automatically on every API startup.
 
+### Local URLs
+
+| Service | URL | Notes |
+|---------|-----|-------|
+| Swagger UI | http://localhost:5280/api/swagger | API docs + test console |
+| Seq logs | http://localhost:5341 | Structured log viewer |
+| Postgres | localhost:**5433** | Mapped to host port 5433 (not default 5432) |
+| Redis | localhost:6379 | |
+
+> **Swagger auth:** click **Authorize**, paste your JWT token directly — no `Bearer` prefix needed.
+
 ## Commands
 
 ```bash
-# Stop infrastructure
+# Stop all infrastructure containers
 docker compose down
 
 # Build
 dotnet build src/Api/Api.csproj
+
+# Run all tests
+dotnet test tests/Api.Tests
+
+# Run a specific test class
+dotnet test tests/Api.Tests --filter "FullyQualifiedName~RestaurantServiceTests"
 
 # Add a new EF migration (never run update manually — migrations apply on startup)
 dotnet ef migrations add <Name> --project src/Infrastructure --startup-project src/Api
