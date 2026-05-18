@@ -6,6 +6,6 @@ public class SendPhoneOtpRequestValidator : AbstractValidator<SendPhoneOtpReques
 {
     public SendPhoneOtpRequestValidator()
     {
-        RuleFor(x => x.PhoneNumber).NotEmpty().Matches(@"^\+?[1-9]\d{6,14}$");
+        RuleFor(x => x.PhoneNumber).NotEmpty().Matches(@"^\+[1-9]\d{6,14}$");
     }
 }

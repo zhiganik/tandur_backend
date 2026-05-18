@@ -6,7 +6,7 @@ public class VerifyPhoneChangeRequestValidator : AbstractValidator<VerifyPhoneCh
 {
     public VerifyPhoneChangeRequestValidator()
     {
-        RuleFor(x => x.NewPhone).NotEmpty().Matches(@"^\+?[1-9]\d{6,14}$")
+        RuleFor(x => x.NewPhone).NotEmpty().Matches(@"^\+[1-9]\d{6,14}$")
             .WithMessage("Invalid phone number format.");
         RuleFor(x => x.Code).NotEmpty().Length(6);
     }
