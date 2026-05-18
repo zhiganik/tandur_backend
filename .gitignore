@@ -16,9 +16,11 @@ Thumbs.db
 # IDE
 .vs/
 .idea/
-.claude/
 *.user
 *.suo
+
+# Claude Code — commit commands/ and settings.json, ignore personal local settings
+.claude/settings.local.json
 
 # EF
 *.db
