@@ -6,13 +6,28 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class RestaurantRepository(AppDbContext db) : IRestaurantRepository
 {
-    public Task<IReadOnlyList<Restaurant>> GetActiveAsync() =>
-        db.Restaurants.Where(r => r.IsActive).ToListAsync()
+    public Task<IReadOnlyList<Restaurant>> GetPagedActiveAsync(int page, int limit) =>
+        db.Restaurants
+            .Where(r => r.IsActive)
+            .OrderBy(r => r.CreatedAt)
+            .Skip((page - 1) * limit)
+            .Take(limit)
+            .ToListAsync()
             .ContinueWith(t => (IReadOnlyList<Restaurant>)t.Result);
 
-    public Task<IReadOnlyList<Restaurant>> GetAllAsync() =>
-        db.Restaurants.OrderBy(r => r.CreatedAt).ToListAsync()
+    public Task<int> CountActiveAsync() =>
+        db.Restaurants.CountAsync(r => r.IsActive);
+
+    public Task<IReadOnlyList<Restaurant>> GetPagedAllAsync(int page, int limit) =>
+        db.Restaurants
+            .OrderBy(r => r.CreatedAt)
+            .Skip((page - 1) * limit)
+            .Take(limit)
+            .ToListAsync()
             .ContinueWith(t => (IReadOnlyList<Restaurant>)t.Result);
+
+    public Task<int> CountAllAsync() =>
+        db.Restaurants.CountAsync();
 
     public Task<Restaurant?> GetByIdAsync(Guid id) =>
         db.Restaurants.FindAsync(id).AsTask()!;

@@ -1,5 +1,5 @@
 using Api.Controllers;
-using Core.DTOs.Categories;
+using Core.DTOs.Common;
 using Core.DTOs.MenuItems;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -10,13 +10,15 @@ namespace Api.Tests.MenuItems;
 [TestFixture]
 public class MenuItemsControllerTests
 {
-    private Mock<IMenuItemService> _service = null!;
-    private MenuItemsController _controller = null!;
+    private Mock<IMenuItemService> _service    = null!;
+    private MenuItemsController    _controller = null!;
+
+    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
 
     [SetUp]
     public void SetUp()
     {
-        _service = new Mock<IMenuItemService>();
+        _service    = new Mock<IMenuItemService>();
         _controller = new MenuItemsController(_service.Object);
     }
 
@@ -24,13 +26,12 @@ public class MenuItemsControllerTests
     public async Task GetMenu_ReturnsOkWithMenuDto()
     {
         var restaurantId = Guid.NewGuid();
-        var menu = new MenuDto { Categories = [], Items = [] };
-        _service.Setup(s => s.GetMenuAsync(restaurantId)).ReturnsAsync(menu);
+        var menu         = new MenuDto();
+        _service.Setup(s => s.GetMenuAsync(restaurantId, DefaultQuery)).ReturnsAsync(menu);
 
-        var result = await _controller.GetMenu(restaurantId);
+        var result = await _controller.GetMenu(restaurantId, DefaultQuery);
 
         var ok = result as OkObjectResult;
-        Assert.That(ok, Is.Not.Null);
         Assert.That(ok!.Value, Is.SameAs(menu));
     }
 
@@ -40,9 +41,7 @@ public class MenuItemsControllerTests
         var id = Guid.NewGuid();
         _service.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(MakeDto("Soup", id));
 
-        var result = await _controller.GetById(id);
-
-        Assert.That(result, Is.InstanceOf<OkObjectResult>());
+        Assert.That(await _controller.GetById(id), Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
@@ -50,9 +49,7 @@ public class MenuItemsControllerTests
     {
         _service.Setup(s => s.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((MenuItemDto?)null);
 
-        var result = await _controller.GetById(Guid.NewGuid());
-
-        Assert.That(result, Is.InstanceOf<NotFoundResult>());
+        Assert.That(await _controller.GetById(Guid.NewGuid()), Is.InstanceOf<NotFoundResult>());
     }
 
     private static MenuItemDto MakeDto(string name, Guid? id = null) =>

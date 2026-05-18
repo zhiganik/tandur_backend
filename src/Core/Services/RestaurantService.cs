@@ -1,4 +1,5 @@
-﻿using Core.Domain.Entities;
+using Core.Domain.Entities;
+using Core.DTOs.Common;
 using Core.DTOs.Restaurants;
 using Core.Interfaces;
 using Core.Interfaces.Repositories;
@@ -7,20 +8,37 @@ namespace Core.Services;
 
 public class RestaurantService(IRestaurantRepository repository) : IRestaurantService
 {
-    public async Task<IReadOnlyList<RestaurantDto>> GetAllAsync(double? lat, double? lng)
+    public async Task<PagedResult<RestaurantDto>> GetAllAsync(double? lat, double? lng, PaginationQuery query)
     {
-        var restaurants = await repository.GetActiveAsync();
+        var total       = await repository.CountActiveAsync();
+        var restaurants = await repository.GetPagedActiveAsync(query.Page, query.Limit);
 
-        return restaurants
+        var data = restaurants
             .Select(r => ToDto(r, lat, lng))
             .OrderBy(r => r.DistanceKm ?? double.MaxValue)
             .ToList();
+
+        return new PagedResult<RestaurantDto>
+        {
+            Data  = data,
+            Total = total,
+            Page  = query.Page,
+            Limit = query.Limit,
+        };
     }
 
-    public async Task<IReadOnlyList<RestaurantDto>> GetAdminListAsync()
+    public async Task<PagedResult<RestaurantDto>> GetAdminListAsync(PaginationQuery query)
     {
-        var restaurants = await repository.GetAllAsync();
-        return restaurants.Select(r => ToDto(r, null, null)).ToList();
+        var total       = await repository.CountAllAsync();
+        var restaurants = await repository.GetPagedAllAsync(query.Page, query.Limit);
+
+        return new PagedResult<RestaurantDto>
+        {
+            Data  = restaurants.Select(r => ToDto(r, null, null)).ToList(),
+            Total = total,
+            Page  = query.Page,
+            Limit = query.Limit,
+        };
     }
 
     public async Task<RestaurantDto?> GetByIdAsync(Guid id)
@@ -33,13 +51,13 @@ public class RestaurantService(IRestaurantRepository repository) : IRestaurantSe
     {
         var restaurant = new Restaurant
         {
-            Name = request.Name,
-            Address = request.Address,
-            Latitude = request.Latitude,
+            Name      = request.Name,
+            Address   = request.Address,
+            Latitude  = request.Latitude,
             Longitude = request.Longitude,
-            TimeZone = request.TimeZone,
-            OpenTime = request.OpenTime,
-            CloseTime = request.CloseTime
+            TimeZone  = request.TimeZone,
+            OpenTime  = request.OpenTime,
+            CloseTime = request.CloseTime,
         };
 
         await repository.AddAsync(restaurant);
@@ -51,11 +69,11 @@ public class RestaurantService(IRestaurantRepository repository) : IRestaurantSe
         var restaurant = await repository.GetByIdAsync(id);
         if (restaurant is null) return null;
 
-        restaurant.Name = request.Name;
-        restaurant.Address = request.Address;
-        restaurant.Latitude = request.Latitude;
+        restaurant.Name      = request.Name;
+        restaurant.Address   = request.Address;
+        restaurant.Latitude  = request.Latitude;
         restaurant.Longitude = request.Longitude;
-        restaurant.OpenTime = request.OpenTime;
+        restaurant.OpenTime  = request.OpenTime;
         restaurant.CloseTime = request.CloseTime;
 
         await repository.UpdateAsync(restaurant);
@@ -78,16 +96,16 @@ public class RestaurantService(IRestaurantRepository repository) : IRestaurantSe
 
     private static RestaurantDto ToDto(Restaurant r, double? lat, double? lng) => new()
     {
-        Id = r.Id,
-        Name = r.Name,
-        Address = r.Address,
-        Latitude = r.Latitude,
-        Longitude = r.Longitude,
-        TimeZone = r.TimeZone,
-        OpenTime = r.OpenTime,
-        CloseTime = r.CloseTime,
-        IsActive = r.IsActive,
-        IsOpenNow = r.IsOpenNow(),
-        DistanceKm = lat.HasValue && lng.HasValue ? r.DistanceTo(lat.Value, lng.Value) : null
+        Id         = r.Id,
+        Name       = r.Name,
+        Address    = r.Address,
+        Latitude   = r.Latitude,
+        Longitude  = r.Longitude,
+        TimeZone   = r.TimeZone,
+        OpenTime   = r.OpenTime,
+        CloseTime  = r.CloseTime,
+        IsActive   = r.IsActive,
+        IsOpenNow  = r.IsOpenNow(),
+        DistanceKm = lat.HasValue && lng.HasValue ? r.DistanceTo(lat.Value, lng.Value) : null,
     };
 }

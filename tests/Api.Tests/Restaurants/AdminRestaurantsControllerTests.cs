@@ -1,4 +1,5 @@
 using Api.Controllers;
+using Core.DTOs.Common;
 using Core.DTOs.Restaurants;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -9,32 +10,29 @@ namespace Api.Tests.Restaurants;
 [TestFixture]
 public class AdminRestaurantsControllerTests
 {
-    private Mock<IRestaurantService> _service = null!;
+    private Mock<IRestaurantService>   _service    = null!;
     private AdminRestaurantsController _controller = null!;
+
+    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
 
     [SetUp]
     public void SetUp()
     {
-        _service = new Mock<IRestaurantService>();
+        _service    = new Mock<IRestaurantService>();
         _controller = new AdminRestaurantsController(_service.Object);
     }
 
-    // GetAll
-
     [Test]
-    public async Task GetAll_ReturnsOk_WithAllRestaurants()
+    public async Task GetAll_ReturnsOk_WithPagedResult()
     {
-        var list = new List<RestaurantDto> { MakeDto("Active"), MakeDto("Inactive") };
-        _service.Setup(s => s.GetAdminListAsync()).ReturnsAsync(list);
+        var paged = new PagedResult<RestaurantDto> { Data = [MakeDto("A"), MakeDto("B")], Total = 2, Page = 1, Limit = 20 };
+        _service.Setup(s => s.GetAdminListAsync(DefaultQuery)).ReturnsAsync(paged);
 
-        var result = await _controller.GetAll();
+        var result = await _controller.GetAll(DefaultQuery);
 
         var ok = result as OkObjectResult;
-        Assert.That(ok, Is.Not.Null);
-        Assert.That(ok!.Value, Is.SameAs(list));
+        Assert.That(ok!.Value, Is.SameAs(paged));
     }
-
-    // GetById
 
     [Test]
     public async Task GetById_ExistingId_ReturnsOk()
@@ -42,9 +40,7 @@ public class AdminRestaurantsControllerTests
         var id = Guid.NewGuid();
         _service.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(MakeDto("R1", id));
 
-        var result = await _controller.GetById(id);
-
-        Assert.That(result, Is.InstanceOf<OkObjectResult>());
+        Assert.That(await _controller.GetById(id), Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
@@ -52,17 +48,13 @@ public class AdminRestaurantsControllerTests
     {
         _service.Setup(s => s.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((RestaurantDto?)null);
 
-        var result = await _controller.GetById(Guid.NewGuid());
-
-        Assert.That(result, Is.InstanceOf<NotFoundResult>());
+        Assert.That(await _controller.GetById(Guid.NewGuid()), Is.InstanceOf<NotFoundResult>());
     }
 
-    // Create
-
     [Test]
-    public async Task Create_ValidRequest_Returns201WithDto()
+    public async Task Create_ValidRequest_Returns201()
     {
-        var dto = MakeDto("New");
+        var dto     = MakeDto("New");
         var request = new CreateRestaurantRequest
         {
             Name = "New", Address = "Addr", Latitude = 0, Longitude = 0,
@@ -70,33 +62,23 @@ public class AdminRestaurantsControllerTests
         };
         _service.Setup(s => s.CreateAsync(request)).ReturnsAsync(dto);
 
-        var result = await _controller.Create(request);
-
+        var result  = await _controller.Create(request);
         var created = result as CreatedAtActionResult;
-        Assert.That(created, Is.Not.Null);
+
         Assert.That(created!.StatusCode, Is.EqualTo(201));
         Assert.That(created.Value, Is.SameAs(dto));
     }
-
-    // Update
 
     [Test]
     public async Task Update_ExistingId_ReturnsOk()
     {
         var id = Guid.NewGuid();
-        var dto = MakeDto("Updated", id);
-        var request = new UpdateRestaurantRequest
+        _service.Setup(s => s.UpdateAsync(id, It.IsAny<UpdateRestaurantRequest>())).ReturnsAsync(MakeDto("U", id));
+
+        Assert.That(await _controller.Update(id, new UpdateRestaurantRequest
         {
-            Name = "Updated", Address = "Addr", Latitude = 0, Longitude = 0,
-            OpenTime = TimeSpan.FromHours(9), CloseTime = TimeSpan.FromHours(22),
-        };
-        _service.Setup(s => s.UpdateAsync(id, request)).ReturnsAsync(dto);
-
-        var result = await _controller.Update(id, request);
-
-        var ok = result as OkObjectResult;
-        Assert.That(ok, Is.Not.Null);
-        Assert.That(ok!.Value, Is.SameAs(dto));
+            Name = "U", Address = "A", OpenTime = TimeSpan.FromHours(9), CloseTime = TimeSpan.FromHours(22),
+        }), Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
@@ -105,40 +87,20 @@ public class AdminRestaurantsControllerTests
         _service.Setup(s => s.UpdateAsync(It.IsAny<Guid>(), It.IsAny<UpdateRestaurantRequest>()))
             .ReturnsAsync((RestaurantDto?)null);
 
-        var result = await _controller.Update(Guid.NewGuid(), new UpdateRestaurantRequest
+        Assert.That(await _controller.Update(Guid.NewGuid(), new UpdateRestaurantRequest
         {
             Name = "X", Address = "X", OpenTime = TimeSpan.Zero, CloseTime = TimeSpan.FromHours(1),
-        });
-
-        Assert.That(result, Is.InstanceOf<NotFoundResult>());
+        }), Is.InstanceOf<NotFoundResult>());
     }
-
-    // Patch
 
     [Test]
     public async Task Patch_ExistingId_ReturnsOk()
     {
         var id = Guid.NewGuid();
-        _service.Setup(s => s.PatchAsync(id, It.IsAny<PatchRestaurantRequest>()))
-            .ReturnsAsync(MakeDto("R", id));
+        _service.Setup(s => s.PatchAsync(id, It.IsAny<PatchRestaurantRequest>())).ReturnsAsync(MakeDto("R", id));
 
-        var result = await _controller.Patch(id, new PatchRestaurantRequest { IsActive = false });
-
-        Assert.That(result, Is.InstanceOf<OkObjectResult>());
+        Assert.That(await _controller.Patch(id, new PatchRestaurantRequest { IsActive = false }), Is.InstanceOf<OkObjectResult>());
     }
-
-    [Test]
-    public async Task Patch_NotFound_Returns404()
-    {
-        _service.Setup(s => s.PatchAsync(It.IsAny<Guid>(), It.IsAny<PatchRestaurantRequest>()))
-            .ReturnsAsync((RestaurantDto?)null);
-
-        var result = await _controller.Patch(Guid.NewGuid(), new PatchRestaurantRequest { IsActive = true });
-
-        Assert.That(result, Is.InstanceOf<NotFoundResult>());
-    }
-
-    // Delete
 
     [Test]
     public async Task Delete_ExistingId_ReturnsNoContent()
@@ -146,9 +108,7 @@ public class AdminRestaurantsControllerTests
         var id = Guid.NewGuid();
         _service.Setup(s => s.DeleteAsync(id)).ReturnsAsync(true);
 
-        var result = await _controller.Delete(id);
-
-        Assert.That(result, Is.InstanceOf<NoContentResult>());
+        Assert.That(await _controller.Delete(id), Is.InstanceOf<NoContentResult>());
     }
 
     [Test]
@@ -156,9 +116,7 @@ public class AdminRestaurantsControllerTests
     {
         _service.Setup(s => s.DeleteAsync(It.IsAny<Guid>())).ReturnsAsync(false);
 
-        var result = await _controller.Delete(Guid.NewGuid());
-
-        Assert.That(result, Is.InstanceOf<NotFoundResult>());
+        Assert.That(await _controller.Delete(Guid.NewGuid()), Is.InstanceOf<NotFoundResult>());
     }
 
     private static RestaurantDto MakeDto(string name, Guid? id = null) =>

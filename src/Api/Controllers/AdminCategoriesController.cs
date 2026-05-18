@@ -1,6 +1,7 @@
 using Core.Domain.Constants;
 using Core.Domain.Enums;
 using Core.DTOs.Categories;
+using Core.DTOs.Common;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -18,11 +19,12 @@ public class AdminCategoriesController(ICategoryService categoryService) : Contr
 {
     [HttpGet("restaurants/{restaurantId:guid}/categories")]
     [SwaggerOperation(Summary = "List all categories for a restaurant, including hidden ones")]
-    [ProducesResponseType<List<CategoryDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PagedResult<CategoryDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAll(Guid restaurantId)
+    public async Task<IActionResult> GetAll(Guid restaurantId, [FromQuery] PaginationQuery query)
     {
-        var categories = await categoryService.GetAllByRestaurantAsync(restaurantId);
+        var categories = await categoryService.GetAllByRestaurantAsync(restaurantId, query);
         return Ok(categories);
     }
 

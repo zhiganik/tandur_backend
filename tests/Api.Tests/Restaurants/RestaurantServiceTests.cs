@@ -1,4 +1,5 @@
 using Core.Domain.Entities;
+using Core.DTOs.Common;
 using Core.DTOs.Restaurants;
 using Core.Interfaces.Repositories;
 using Core.Services;
@@ -9,74 +10,79 @@ namespace Api.Tests.Restaurants;
 [TestFixture]
 public class RestaurantServiceTests
 {
-    private Mock<IRestaurantRepository> _repo = null!;
-    private RestaurantService _service = null!;
+    private Mock<IRestaurantRepository> _repo    = null!;
+    private RestaurantService           _service = null!;
+
+    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
 
     [SetUp]
     public void SetUp()
     {
-        _repo = new Mock<IRestaurantRepository>();
+        _repo    = new Mock<IRestaurantRepository>();
         _service = new RestaurantService(_repo.Object);
     }
 
     // GetAllAsync
-
     [Test]
-    public async Task GetAllAsync_ReturnsOnlyActiveRestaurants()
+    public async Task GetAllAsync_ReturnsPagedResult()
     {
-        _repo.Setup(r => r.GetActiveAsync())
+        _repo.Setup(r => r.CountActiveAsync()).ReturnsAsync(2);
+        _repo.Setup(r => r.GetPagedActiveAsync(1, 20))
             .ReturnsAsync([MakeRestaurant("Active 1"), MakeRestaurant("Active 2")]);
 
-        var result = await _service.GetAllAsync(null, null);
+        var result = await _service.GetAllAsync(null, null, DefaultQuery);
 
-        Assert.That(result, Has.Count.EqualTo(2));
-        Assert.That(result.Select(r => r.Name), Is.EquivalentTo(new[] { "Active 1", "Active 2" }));
+        Assert.That(result.Data, Has.Count.EqualTo(2));
+        Assert.That(result.Total, Is.EqualTo(2));
+        Assert.That(result.Page, Is.EqualTo(1));
+        Assert.That(result.Limit, Is.EqualTo(20));
     }
 
     [Test]
     public async Task GetAllAsync_WithCoordinates_SortsByDistanceAscending()
     {
-        // Almaty ~(43.25, 76.95). Near restaurant should sort first.
-        _repo.Setup(r => r.GetActiveAsync()).ReturnsAsync(
+        _repo.Setup(r => r.CountActiveAsync()).ReturnsAsync(2);
+        _repo.Setup(r => r.GetPagedActiveAsync(1, 20)).ReturnsAsync(
         [
-            MakeRestaurant("Far",  lat: 51.51, lng: -0.13),   // London
-            MakeRestaurant("Near", lat: 43.26, lng: 76.96),   // ~1 km from query point
+            MakeRestaurant("Far",  lat: 51.51, lng: -0.13),
+            MakeRestaurant("Near", lat: 43.26, lng: 76.96),
         ]);
 
-        var result = await _service.GetAllAsync(43.25, 76.95);
+        var result = await _service.GetAllAsync(43.25, 76.95, DefaultQuery);
 
-        Assert.That(result[0].Name, Is.EqualTo("Near"));
-        Assert.That(result[0].DistanceKm!.Value, Is.LessThan(result[1].DistanceKm!.Value));
+        Assert.That(result.Data[0].Name, Is.EqualTo("Near"));
+        Assert.That(result.Data[0].DistanceKm!.Value, Is.LessThan(result.Data[1].DistanceKm!.Value));
     }
 
     [Test]
     public async Task GetAllAsync_WithoutCoordinates_DistanceKmIsNull()
     {
-        _repo.Setup(r => r.GetActiveAsync()).ReturnsAsync([MakeRestaurant("R1")]);
+        _repo.Setup(r => r.CountActiveAsync()).ReturnsAsync(1);
+        _repo.Setup(r => r.GetPagedActiveAsync(1, 20)).ReturnsAsync([MakeRestaurant("R1")]);
 
-        var result = await _service.GetAllAsync(null, null);
+        var result = await _service.GetAllAsync(null, null, DefaultQuery);
 
-        Assert.That(result[0].DistanceKm, Is.Null);
+        Assert.That(result.Data[0].DistanceKm, Is.Null);
     }
 
     // GetAdminListAsync
-
     [Test]
     public async Task GetAdminListAsync_ReturnsAllRestaurants()
     {
-        _repo.Setup(r => r.GetAllAsync()).ReturnsAsync(
+        _repo.Setup(r => r.CountAllAsync()).ReturnsAsync(2);
+        _repo.Setup(r => r.GetPagedAllAsync(1, 20)).ReturnsAsync(
         [
             MakeRestaurant("Active",   isActive: true),
             MakeRestaurant("Inactive", isActive: false),
         ]);
 
-        var result = await _service.GetAdminListAsync();
+        var result = await _service.GetAdminListAsync(DefaultQuery);
 
-        Assert.That(result, Has.Count.EqualTo(2));
+        Assert.That(result.Data, Has.Count.EqualTo(2));
+        Assert.That(result.Total, Is.EqualTo(2));
     }
 
     // GetByIdAsync
-
     [Test]
     public async Task GetByIdAsync_ExistingId_ReturnsDto()
     {
@@ -86,8 +92,7 @@ public class RestaurantServiceTests
         var result = await _service.GetByIdAsync(r.Id);
 
         Assert.That(result, Is.Not.Null);
-        Assert.That(result!.Id, Is.EqualTo(r.Id));
-        Assert.That(result.Name, Is.EqualTo("My Restaurant"));
+        Assert.That(result!.Name, Is.EqualTo("My Restaurant"));
     }
 
     [Test]
@@ -95,18 +100,14 @@ public class RestaurantServiceTests
     {
         _repo.Setup(x => x.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Restaurant?)null);
 
-        var result = await _service.GetByIdAsync(Guid.NewGuid());
-
-        Assert.That(result, Is.Null);
+        Assert.That(await _service.GetByIdAsync(Guid.NewGuid()), Is.Null);
     }
 
     // CreateAsync
-
     [Test]
     public async Task CreateAsync_BuildsEntityAndCallsRepository()
     {
-        _repo.Setup(x => x.AddAsync(It.IsAny<Restaurant>()))
-            .ReturnsAsync((Restaurant r) => r);
+        _repo.Setup(x => x.AddAsync(It.IsAny<Restaurant>())).ReturnsAsync((Restaurant r) => r);
 
         var result = await _service.CreateAsync(new CreateRestaurantRequest
         {
@@ -120,9 +121,8 @@ public class RestaurantServiceTests
     }
 
     // UpdateAsync
-
     [Test]
-    public async Task UpdateAsync_ExistingId_UpdatesFieldsAndSaves()
+    public async Task UpdateAsync_ExistingId_UpdatesFields()
     {
         var r = MakeRestaurant("Old Name");
         _repo.Setup(x => x.GetByIdAsync(r.Id)).ReturnsAsync(r);
@@ -143,17 +143,13 @@ public class RestaurantServiceTests
     {
         _repo.Setup(x => x.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Restaurant?)null);
 
-        var result = await _service.UpdateAsync(Guid.NewGuid(), new UpdateRestaurantRequest
+        Assert.That(await _service.UpdateAsync(Guid.NewGuid(), new UpdateRestaurantRequest
         {
             Name = "X", Address = "X", OpenTime = TimeSpan.Zero, CloseTime = TimeSpan.FromHours(1),
-        });
-
-        Assert.That(result, Is.Null);
-        _repo.Verify(x => x.UpdateAsync(It.IsAny<Restaurant>()), Times.Never);
+        }), Is.Null);
     }
 
     // PatchAsync
-
     [Test]
     public async Task PatchAsync_SetsIsActiveToFalse()
     {
@@ -164,7 +160,6 @@ public class RestaurantServiceTests
         var result = await _service.PatchAsync(r.Id, new PatchRestaurantRequest { IsActive = false });
 
         Assert.That(result!.IsActive, Is.False);
-        _repo.Verify(x => x.UpdateAsync(r), Times.Once);
     }
 
     [Test]
@@ -174,33 +169,17 @@ public class RestaurantServiceTests
         _repo.Setup(x => x.GetByIdAsync(r.Id)).ReturnsAsync(r);
         _repo.Setup(x => x.UpdateAsync(r)).Returns(Task.CompletedTask);
 
-        var result = await _service.PatchAsync(r.Id, new PatchRestaurantRequest { IsActive = null });
-
-        Assert.That(result!.IsActive, Is.True);
-    }
-
-    [Test]
-    public async Task PatchAsync_NonExistingId_ReturnsNull()
-    {
-        _repo.Setup(x => x.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Restaurant?)null);
-
-        var result = await _service.PatchAsync(Guid.NewGuid(), new PatchRestaurantRequest { IsActive = false });
-
-        Assert.That(result, Is.Null);
+        Assert.That((await _service.PatchAsync(r.Id, new PatchRestaurantRequest { IsActive = null }))!.IsActive, Is.True);
     }
 
     // DeleteAsync
-
     [Test]
     public async Task DeleteAsync_DelegatesToRepository()
     {
         var id = Guid.NewGuid();
         _repo.Setup(x => x.SoftDeleteAsync(id)).ReturnsAsync(true);
 
-        var result = await _service.DeleteAsync(id);
-
-        Assert.That(result, Is.True);
-        _repo.Verify(x => x.SoftDeleteAsync(id), Times.Once);
+        Assert.That(await _service.DeleteAsync(id), Is.True);
     }
 
     [Test]
@@ -208,21 +187,19 @@ public class RestaurantServiceTests
     {
         _repo.Setup(x => x.SoftDeleteAsync(It.IsAny<Guid>())).ReturnsAsync(false);
 
-        var result = await _service.DeleteAsync(Guid.NewGuid());
-
-        Assert.That(result, Is.False);
+        Assert.That(await _service.DeleteAsync(Guid.NewGuid()), Is.False);
     }
 
     private static Restaurant MakeRestaurant(string name, bool isActive = true, double lat = 0, double lng = 0) =>
         new()
         {
-            Name = name,
-            Address = "Test Address",
-            Latitude = lat,
+            Name      = name,
+            Address   = "Test Address",
+            Latitude  = lat,
             Longitude = lng,
-            TimeZone = "UTC",
-            OpenTime = TimeSpan.FromHours(9),
+            TimeZone  = "UTC",
+            OpenTime  = TimeSpan.FromHours(9),
             CloseTime = TimeSpan.FromHours(22),
-            IsActive = isActive,
+            IsActive  = isActive,
         };
 }

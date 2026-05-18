@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Core.Domain.Constants;
 using Core.Domain.Entities;
+using Core.DTOs.Common;
 using Core.DTOs.Users;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -23,24 +24,34 @@ public class UsersController(
 {
     [HttpGet]
     [SwaggerOperation(Summary = "List all users (PII fields are masked)")]
-    [ProducesResponseType<List<UserDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PagedResult<UserDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetUsers()
+    public async Task<IActionResult> GetUsers([FromQuery] PaginationQuery query)
     {
+        var total = await userManager.Users.CountAsync();
         var users = await userManager.Users
             .OrderBy(u => u.CreatedAt)
+            .Skip((query.Page - 1) * query.Limit)
+            .Take(query.Limit)
             .Select(u => new UserDto
             {
-                Id = u.Id,
+                Id        = u.Id,
                 FirstName = u.FirstName,
-                LastName = u.LastName,
-                Email = MaskEmail(u.Email),
-                Phone = MaskPhone(u.PhoneNumber),
+                LastName  = u.LastName,
+                Email     = MaskEmail(u.Email),
+                Phone     = MaskPhone(u.PhoneNumber),
                 CreatedAt = u.CreatedAt,
             })
             .ToListAsync();
 
-        return Ok(users);
+        return Ok(new PagedResult<UserDto>
+        {
+            Data  = users,
+            Total = total,
+            Page  = query.Page,
+            Limit = query.Limit,
+        });
     }
 
     [HttpPut("me")]

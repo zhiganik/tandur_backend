@@ -6,6 +6,7 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class CategoryRepository(AppDbContext db) : ICategoryRepository
 {
+    // Non-paged — used by MenuItemService to build composite MenuDto (categories are few)
     public Task<IReadOnlyList<Category>> GetVisibleByRestaurantAsync(Guid restaurantId) =>
         db.Categories
             .Where(c => c.RestaurantId == restaurantId && c.IsVisible)
@@ -19,6 +20,31 @@ public class CategoryRepository(AppDbContext db) : ICategoryRepository
             .OrderBy(c => c.SortOrder)
             .ToListAsync()
             .ContinueWith(t => (IReadOnlyList<Category>)t.Result);
+
+    // Paged — used by list endpoints
+    public Task<IReadOnlyList<Category>> GetPagedVisibleAsync(Guid restaurantId, int page, int limit) =>
+        db.Categories
+            .Where(c => c.RestaurantId == restaurantId && c.IsVisible)
+            .OrderBy(c => c.SortOrder)
+            .Skip((page - 1) * limit)
+            .Take(limit)
+            .ToListAsync()
+            .ContinueWith(t => (IReadOnlyList<Category>)t.Result);
+
+    public Task<int> CountVisibleAsync(Guid restaurantId) =>
+        db.Categories.CountAsync(c => c.RestaurantId == restaurantId && c.IsVisible);
+
+    public Task<IReadOnlyList<Category>> GetPagedAllAsync(Guid restaurantId, int page, int limit) =>
+        db.Categories
+            .Where(c => c.RestaurantId == restaurantId)
+            .OrderBy(c => c.SortOrder)
+            .Skip((page - 1) * limit)
+            .Take(limit)
+            .ToListAsync()
+            .ContinueWith(t => (IReadOnlyList<Category>)t.Result);
+
+    public Task<int> CountAllAsync(Guid restaurantId) =>
+        db.Categories.CountAsync(c => c.RestaurantId == restaurantId);
 
     public Task<Category?> GetByIdAsync(Guid id) =>
         db.Categories.FindAsync(id).AsTask()!;

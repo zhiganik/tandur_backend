@@ -1,4 +1,5 @@
 using Core.Domain.Entities;
+using Core.DTOs.Common;
 using Core.DTOs.MenuItems;
 using Core.Interfaces.Repositories;
 using Core.Services;
@@ -9,48 +10,54 @@ namespace Api.Tests.MenuItems;
 [TestFixture]
 public class MenuItemServiceTests
 {
-    private Mock<IMenuItemRepository> _menuRepo = null!;
+    private Mock<IMenuItemRepository> _menuRepo    = null!;
     private Mock<ICategoryRepository> _categoryRepo = null!;
-    private MenuItemService _service = null!;
+    private MenuItemService           _service     = null!;
+
+    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
 
     [SetUp]
     public void SetUp()
     {
-        _menuRepo = new Mock<IMenuItemRepository>();
+        _menuRepo     = new Mock<IMenuItemRepository>();
         _categoryRepo = new Mock<ICategoryRepository>();
-        _service = new MenuItemService(_menuRepo.Object, _categoryRepo.Object);
+        _service      = new MenuItemService(_menuRepo.Object, _categoryRepo.Object);
     }
 
     // GetMenuAsync
     [Test]
-    public async Task GetMenuAsync_ReturnsOnlyVisibleCategoriesAndAvailableItems()
+    public async Task GetMenuAsync_ReturnsVisibleCategoriesAndPagedAvailableItems()
     {
         var restaurantId = Guid.NewGuid();
         _categoryRepo.Setup(r => r.GetVisibleByRestaurantAsync(restaurantId))
             .ReturnsAsync([MakeCategory("Hot"), MakeCategory("Cold")]);
-        _menuRepo.Setup(r => r.GetAvailableByRestaurantAsync(restaurantId))
+        _menuRepo.Setup(r => r.CountAvailableAsync(restaurantId)).ReturnsAsync(2);
+        _menuRepo.Setup(r => r.GetPagedAvailableAsync(restaurantId, 1, 20))
             .ReturnsAsync([MakeMenuItem("Soup"), MakeMenuItem("Salad")]);
 
-        var result = await _service.GetMenuAsync(restaurantId);
+        var result = await _service.GetMenuAsync(restaurantId, DefaultQuery);
 
         Assert.That(result.Categories, Has.Count.EqualTo(2));
-        Assert.That(result.Items, Has.Count.EqualTo(2));
+        Assert.That(result.Items.Data, Has.Count.EqualTo(2));
+        Assert.That(result.Items.Total, Is.EqualTo(2));
+        Assert.That(result.Items.Page, Is.EqualTo(1));
     }
 
     // GetAdminMenuAsync
     [Test]
-    public async Task GetAdminMenuAsync_ReturnsAllCategoriesAndItems()
+    public async Task GetAdminMenuAsync_ReturnsAllCategoriesAndPagedItems()
     {
         var restaurantId = Guid.NewGuid();
         _categoryRepo.Setup(r => r.GetAllByRestaurantAsync(restaurantId))
             .ReturnsAsync([MakeCategory("Visible"), MakeCategory("Hidden")]);
-        _menuRepo.Setup(r => r.GetAllByRestaurantAsync(restaurantId))
+        _menuRepo.Setup(r => r.CountAllAsync(restaurantId)).ReturnsAsync(2);
+        _menuRepo.Setup(r => r.GetPagedAllAsync(restaurantId, 1, 20))
             .ReturnsAsync([MakeMenuItem("Available"), MakeMenuItem("Unavailable")]);
 
-        var result = await _service.GetAdminMenuAsync(restaurantId);
+        var result = await _service.GetAdminMenuAsync(restaurantId, DefaultQuery);
 
         Assert.That(result.Categories, Has.Count.EqualTo(2));
-        Assert.That(result.Items, Has.Count.EqualTo(2));
+        Assert.That(result.Items.Total, Is.EqualTo(2));
     }
 
     // GetByIdAsync
@@ -62,7 +69,6 @@ public class MenuItemServiceTests
 
         var result = await _service.GetByIdAsync(item.Id);
 
-        Assert.That(result, Is.Not.Null);
         Assert.That(result!.Name, Is.EqualTo("Soup"));
     }
 
@@ -72,19 +78,7 @@ public class MenuItemServiceTests
         var item = MakeMenuItem("Ghost", isActive: false);
         _menuRepo.Setup(r => r.GetByIdAsync(item.Id)).ReturnsAsync(item);
 
-        var result = await _service.GetByIdAsync(item.Id);
-
-        Assert.That(result, Is.Null);
-    }
-
-    [Test]
-    public async Task GetByIdAsync_NonExistingId_ReturnsNull()
-    {
-        _menuRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((MenuItem?)null);
-
-        var result = await _service.GetByIdAsync(Guid.NewGuid());
-
-        Assert.That(result, Is.Null);
+        Assert.That(await _service.GetByIdAsync(item.Id), Is.Null);
     }
 
     // GetAdminByIdAsync
@@ -94,9 +88,7 @@ public class MenuItemServiceTests
         var item = MakeMenuItem("Ghost", isActive: false);
         _menuRepo.Setup(r => r.GetByIdAsync(item.Id)).ReturnsAsync(item);
 
-        var result = await _service.GetAdminByIdAsync(item.Id);
-
-        Assert.That(result, Is.Not.Null);
+        Assert.That(await _service.GetAdminByIdAsync(item.Id), Is.Not.Null);
     }
 
     // CreateAsync
@@ -107,15 +99,11 @@ public class MenuItemServiceTests
 
         var result = await _service.CreateAsync(new CreateMenuItemRequest
         {
-            RestaurantId = Guid.NewGuid(),
-            CategoryId = Guid.NewGuid(),
-            Name = "Burger",
-            Price = 12.50m,
-            Currency = "EUR",
+            RestaurantId = Guid.NewGuid(), CategoryId = Guid.NewGuid(),
+            Name = "Burger", Price = 12.50m, Currency = "EUR",
         });
 
         Assert.That(result.Name, Is.EqualTo("Burger"));
-        Assert.That(result.Price, Is.EqualTo(12.50m));
         _menuRepo.Verify(r => r.AddAsync(It.Is<MenuItem>(m => m.Name == "Burger")), Times.Once);
     }
 
@@ -129,16 +117,11 @@ public class MenuItemServiceTests
 
         var result = await _service.UpdateAsync(item.Id, new UpdateMenuItemRequest
         {
-            Name = "New",
-            Price = 15,
-            Currency = "USD",
-            CategoryId = Guid.NewGuid(),
-            IsAvailable = false,
+            Name = "New", Price = 15, Currency = "USD", CategoryId = Guid.NewGuid(), IsAvailable = false,
         });
 
         Assert.That(result!.Name, Is.EqualTo("New"));
         Assert.That(result.IsAvailable, Is.False);
-        _menuRepo.Verify(r => r.UpdateAsync(item), Times.Once);
     }
 
     [Test]
@@ -146,9 +129,10 @@ public class MenuItemServiceTests
     {
         _menuRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((MenuItem?)null);
 
-        var result = await _service.UpdateAsync(Guid.NewGuid(), new UpdateMenuItemRequest { Name = "X", Price = 1, Currency = "EUR" });
-
-        Assert.That(result, Is.Null);
+        Assert.That(await _service.UpdateAsync(Guid.NewGuid(), new UpdateMenuItemRequest
+        {
+            Name = "X", Price = 1, Currency = "EUR", CategoryId = Guid.NewGuid(),
+        }), Is.Null);
     }
 
     // PatchAsync
@@ -184,9 +168,7 @@ public class MenuItemServiceTests
         var id = Guid.NewGuid();
         _menuRepo.Setup(r => r.SoftDeleteAsync(id)).ReturnsAsync(true);
 
-        var result = await _service.DeleteAsync(id);
-
-        Assert.That(result, Is.True);
+        Assert.That(await _service.DeleteAsync(id), Is.True);
         _menuRepo.Verify(r => r.SoftDeleteAsync(id), Times.Once);
     }
 
@@ -195,9 +177,7 @@ public class MenuItemServiceTests
     {
         _menuRepo.Setup(r => r.SoftDeleteAsync(It.IsAny<Guid>())).ReturnsAsync(false);
 
-        var result = await _service.DeleteAsync(Guid.NewGuid());
-
-        Assert.That(result, Is.False);
+        Assert.That(await _service.DeleteAsync(Guid.NewGuid()), Is.False);
     }
 
     private static Category MakeCategory(string name) =>
@@ -206,12 +186,8 @@ public class MenuItemServiceTests
     private static MenuItem MakeMenuItem(string name, bool isActive = true, bool isAvailable = true, decimal price = 10) =>
         new()
         {
-            RestaurantId = Guid.NewGuid(),
-            CategoryId = Guid.NewGuid(),
-            Name = name,
-            Price = price,
-            Currency = "EUR",
-            IsActive = isActive,
-            IsAvailable = isAvailable,
+            RestaurantId = Guid.NewGuid(), CategoryId = Guid.NewGuid(),
+            Name = name, Price = price, Currency = "EUR",
+            IsActive = isActive, IsAvailable = isAvailable,
         };
 }

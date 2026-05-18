@@ -1,3 +1,4 @@
+using Core.DTOs.Common;
 using Core.DTOs.Restaurants;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -16,11 +17,12 @@ public class RestaurantsController(IRestaurantService restaurantService) : Contr
 {
     [HttpGet]
     [SwaggerOperation(Summary = "List active restaurants, optionally sorted by distance")]
-    [ProducesResponseType<List<RestaurantDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PagedResult<RestaurantDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAll([FromQuery] double? lat, [FromQuery] double? lng)
+    public async Task<IActionResult> GetAll([FromQuery] double? lat, [FromQuery] double? lng, [FromQuery] PaginationQuery query)
     {
-        var restaurants = await restaurantService.GetAllAsync(lat, lng);
+        var restaurants = await restaurantService.GetAllAsync(lat, lng, query);
         return Ok(restaurants);
     }
 

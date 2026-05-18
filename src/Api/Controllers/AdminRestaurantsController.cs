@@ -1,4 +1,5 @@
 using Core.Domain.Constants;
+using Core.DTOs.Common;
 using Core.DTOs.Restaurants;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -17,11 +18,12 @@ public class AdminRestaurantsController(IRestaurantService restaurantService) : 
 {
     [HttpGet]
     [SwaggerOperation(Summary = "List all restaurants including inactive ones")]
-    [ProducesResponseType<List<RestaurantDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PagedResult<RestaurantDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] PaginationQuery query)
     {
-        var result = await restaurantService.GetAdminListAsync();
+        var result = await restaurantService.GetAdminListAsync(query);
         return Ok(result);
     }
 

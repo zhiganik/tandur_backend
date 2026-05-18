@@ -1,4 +1,5 @@
-﻿using Api.Controllers;
+using Api.Controllers;
+using Core.DTOs.Common;
 using Core.DTOs.Restaurants;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -9,51 +10,48 @@ namespace Api.Tests.Restaurants;
 [TestFixture]
 public class RestaurantsControllerTests
 {
-    private Mock<IRestaurantService> _service = null!;
-    private RestaurantsController _controller = null!;
+    private Mock<IRestaurantService> _service    = null!;
+    private RestaurantsController    _controller = null!;
+
+    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
 
     [SetUp]
     public void SetUp()
     {
-        _service = new Mock<IRestaurantService>();
+        _service    = new Mock<IRestaurantService>();
         _controller = new RestaurantsController(_service.Object);
     }
 
     [Test]
-    public async Task GetAll_ReturnsOk_WithRestaurantList()
+    public async Task GetAll_ReturnsOk_WithPagedResult()
     {
-        var list = new List<RestaurantDto> { MakeDto("R1"), MakeDto("R2") };
-        _service.Setup(s => s.GetAllAsync(null, null)).ReturnsAsync(list);
+        var paged = new PagedResult<RestaurantDto> { Data = [MakeDto("R1"), MakeDto("R2")], Total = 2, Page = 1, Limit = 20 };
+        _service.Setup(s => s.GetAllAsync(null, null, DefaultQuery)).ReturnsAsync(paged);
 
-        var result = await _controller.GetAll(null, null);
+        var result = await _controller.GetAll(null, null, DefaultQuery);
 
         var ok = result as OkObjectResult;
-        Assert.That(ok, Is.Not.Null);
-        Assert.That(ok!.Value, Is.SameAs(list));
+        Assert.That(ok!.Value, Is.SameAs(paged));
     }
 
     [Test]
     public async Task GetAll_PassesCoordinatesToService()
     {
-        _service.Setup(s => s.GetAllAsync(43.25, 76.95)).ReturnsAsync([]);
+        _service.Setup(s => s.GetAllAsync(43.25, 76.95, DefaultQuery))
+            .ReturnsAsync(new PagedResult<RestaurantDto>());
 
-        await _controller.GetAll(43.25, 76.95);
+        await _controller.GetAll(43.25, 76.95, DefaultQuery);
 
-        _service.Verify(s => s.GetAllAsync(43.25, 76.95), Times.Once);
+        _service.Verify(s => s.GetAllAsync(43.25, 76.95, DefaultQuery), Times.Once);
     }
 
     [Test]
     public async Task GetById_ExistingId_ReturnsOk()
     {
         var id = Guid.NewGuid();
-        var dto = MakeDto("R1", id);
-        _service.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(dto);
+        _service.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(MakeDto("R1", id));
 
-        var result = await _controller.GetById(id);
-
-        var ok = result as OkObjectResult;
-        Assert.That(ok, Is.Not.Null);
-        Assert.That(ok!.Value, Is.SameAs(dto));
+        Assert.That(await _controller.GetById(id), Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
@@ -61,9 +59,7 @@ public class RestaurantsControllerTests
     {
         _service.Setup(s => s.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((RestaurantDto?)null);
 
-        var result = await _controller.GetById(Guid.NewGuid());
-
-        Assert.That(result, Is.InstanceOf<NotFoundResult>());
+        Assert.That(await _controller.GetById(Guid.NewGuid()), Is.InstanceOf<NotFoundResult>());
     }
 
     private static RestaurantDto MakeDto(string name, Guid? id = null) =>

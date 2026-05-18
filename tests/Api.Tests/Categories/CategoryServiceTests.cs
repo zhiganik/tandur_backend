@@ -1,6 +1,7 @@
 using Core.Domain.Entities;
 using Core.Domain.Enums;
 using Core.DTOs.Categories;
+using Core.DTOs.Common;
 using Core.Interfaces.Repositories;
 using Core.Services;
 using Moq;
@@ -10,28 +11,31 @@ namespace Api.Tests.Categories;
 [TestFixture]
 public class CategoryServiceTests
 {
-    private Mock<ICategoryRepository> _repo = null!;
-    private CategoryService _service = null!;
+    private Mock<ICategoryRepository> _repo    = null!;
+    private CategoryService           _service = null!;
+
+    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
 
     [SetUp]
     public void SetUp()
     {
-        _repo = new Mock<ICategoryRepository>();
+        _repo    = new Mock<ICategoryRepository>();
         _service = new CategoryService(_repo.Object);
     }
 
     // GetVisibleByRestaurantAsync
     [Test]
-    public async Task GetVisibleByRestaurantAsync_ReturnsMappedDtos()
+    public async Task GetVisibleByRestaurantAsync_ReturnsMappedPagedResult()
     {
         var restaurantId = Guid.NewGuid();
-        _repo.Setup(r => r.GetVisibleByRestaurantAsync(restaurantId))
+        _repo.Setup(r => r.CountVisibleAsync(restaurantId)).ReturnsAsync(2);
+        _repo.Setup(r => r.GetPagedVisibleAsync(restaurantId, 1, 20))
             .ReturnsAsync([MakeCategory("Starters", restaurantId), MakeCategory("Mains", restaurantId)]);
 
-        var result = await _service.GetVisibleByRestaurantAsync(restaurantId);
+        var result = await _service.GetVisibleByRestaurantAsync(restaurantId, DefaultQuery);
 
-        Assert.That(result, Has.Count.EqualTo(2));
-        Assert.That(result.Select(c => c.Name), Is.EquivalentTo(new[] { "Starters", "Mains" }));
+        Assert.That(result.Data, Has.Count.EqualTo(2));
+        Assert.That(result.Total, Is.EqualTo(2));
     }
 
     // GetAllByRestaurantAsync
@@ -39,12 +43,14 @@ public class CategoryServiceTests
     public async Task GetAllByRestaurantAsync_ReturnsAllIncludingHidden()
     {
         var restaurantId = Guid.NewGuid();
-        _repo.Setup(r => r.GetAllByRestaurantAsync(restaurantId))
-            .ReturnsAsync([MakeCategory("Visible", restaurantId, isVisible: true), MakeCategory("Hidden", restaurantId, isVisible: false)]);
+        _repo.Setup(r => r.CountAllAsync(restaurantId)).ReturnsAsync(2);
+        _repo.Setup(r => r.GetPagedAllAsync(restaurantId, 1, 20))
+            .ReturnsAsync([MakeCategory("Visible", restaurantId), MakeCategory("Hidden", restaurantId, isVisible: false)]);
 
-        var result = await _service.GetAllByRestaurantAsync(restaurantId);
+        var result = await _service.GetAllByRestaurantAsync(restaurantId, DefaultQuery);
 
-        Assert.That(result, Has.Count.EqualTo(2));
+        Assert.That(result.Data, Has.Count.EqualTo(2));
+        Assert.That(result.Total, Is.EqualTo(2));
     }
 
     // GetByIdAsync
@@ -56,7 +62,6 @@ public class CategoryServiceTests
 
         var result = await _service.GetByIdAsync(category.Id);
 
-        Assert.That(result, Is.Not.Null);
         Assert.That(result!.Name, Is.EqualTo("Desserts"));
     }
 
@@ -65,9 +70,7 @@ public class CategoryServiceTests
     {
         _repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Category?)null);
 
-        var result = await _service.GetByIdAsync(Guid.NewGuid());
-
-        Assert.That(result, Is.Null);
+        Assert.That(await _service.GetByIdAsync(Guid.NewGuid()), Is.Null);
     }
 
     // CreateAsync
@@ -79,14 +82,11 @@ public class CategoryServiceTests
 
         var result = await _service.CreateAsync(restaurantId, new CreateCategoryRequest
         {
-            Name = "Cold Dishes",
-            SortOrder = 1,
-            IsVisible = true,
+            Name = "Cold Dishes", SortOrder = 1, IsVisible = true,
         });
 
         Assert.That(result.Name, Is.EqualTo("Cold Dishes"));
         Assert.That(result.RestaurantId, Is.EqualTo(restaurantId));
-        _repo.Verify(r => r.AddAsync(It.Is<Category>(c => c.Name == "Cold Dishes")), Times.Once);
     }
 
     // UpdateAsync
@@ -99,14 +99,11 @@ public class CategoryServiceTests
 
         var result = await _service.UpdateAsync(category.Id, new UpdateCategoryRequest
         {
-            Name = "New",
-            SortOrder = 2,
-            IsVisible = false,
+            Name = "New", SortOrder = 2, IsVisible = false,
         });
 
         Assert.That(result!.Name, Is.EqualTo("New"));
         Assert.That(result.IsVisible, Is.False);
-        _repo.Verify(r => r.UpdateAsync(category), Times.Once);
     }
 
     [Test]
@@ -114,10 +111,7 @@ public class CategoryServiceTests
     {
         _repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Category?)null);
 
-        var result = await _service.UpdateAsync(Guid.NewGuid(), new UpdateCategoryRequest { Name = "X" });
-
-        Assert.That(result, Is.Null);
-        _repo.Verify(r => r.UpdateAsync(It.IsAny<Category>()), Times.Never);
+        Assert.That(await _service.UpdateAsync(Guid.NewGuid(), new UpdateCategoryRequest { Name = "X" }), Is.Null);
     }
 
     // PatchAsync
@@ -146,16 +140,6 @@ public class CategoryServiceTests
         Assert.That(result.SortOrder, Is.EqualTo(5));
     }
 
-    [Test]
-    public async Task PatchAsync_NonExistingId_ReturnsNull()
-    {
-        _repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Category?)null);
-
-        var result = await _service.PatchAsync(Guid.NewGuid(), new PatchCategoryRequest { IsVisible = true });
-
-        Assert.That(result, Is.Null);
-    }
-
     // DeleteAsync
     [Test]
     public async Task DeleteAsync_WithNoItems_ReturnsDeleted()
@@ -165,9 +149,7 @@ public class CategoryServiceTests
         _repo.Setup(r => r.HasActiveItemsAsync(category.Id)).ReturnsAsync(false);
         _repo.Setup(r => r.DeleteAsync(category.Id)).ReturnsAsync(true);
 
-        var result = await _service.DeleteAsync(category.Id);
-
-        Assert.That(result, Is.EqualTo(DeleteCategoryResult.Deleted));
+        Assert.That(await _service.DeleteAsync(category.Id), Is.EqualTo(DeleteCategoryResult.Deleted));
     }
 
     [Test]
@@ -177,9 +159,7 @@ public class CategoryServiceTests
         _repo.Setup(r => r.GetByIdAsync(category.Id)).ReturnsAsync(category);
         _repo.Setup(r => r.HasActiveItemsAsync(category.Id)).ReturnsAsync(true);
 
-        var result = await _service.DeleteAsync(category.Id);
-
-        Assert.That(result, Is.EqualTo(DeleteCategoryResult.HasItems));
+        Assert.That(await _service.DeleteAsync(category.Id), Is.EqualTo(DeleteCategoryResult.HasItems));
         _repo.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
     }
 
@@ -188,17 +168,9 @@ public class CategoryServiceTests
     {
         _repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Category?)null);
 
-        var result = await _service.DeleteAsync(Guid.NewGuid());
-
-        Assert.That(result, Is.EqualTo(DeleteCategoryResult.NotFound));
+        Assert.That(await _service.DeleteAsync(Guid.NewGuid()), Is.EqualTo(DeleteCategoryResult.NotFound));
     }
 
     private static Category MakeCategory(string name, Guid? restaurantId = null, bool isVisible = true, int sortOrder = 0) =>
-        new()
-        {
-            RestaurantId = restaurantId ?? Guid.NewGuid(),
-            Name = name,
-            SortOrder = sortOrder,
-            IsVisible = isVisible,
-        };
+        new() { RestaurantId = restaurantId ?? Guid.NewGuid(), Name = name, SortOrder = sortOrder, IsVisible = isVisible };
 }

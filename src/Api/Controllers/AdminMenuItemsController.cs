@@ -1,4 +1,5 @@
 using Core.Domain.Constants;
+using Core.DTOs.Common;
 using Core.DTOs.MenuItems;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -16,12 +17,13 @@ namespace Api.Controllers;
 public class AdminMenuItemsController(IMenuItemService menuItemService) : ControllerBase
 {
     [HttpGet("restaurants/{restaurantId:guid}/menu")]
-    [SwaggerOperation(Summary = "Get full menu including unavailable items (admin view)")]
+    [SwaggerOperation(Summary = "Get full menu including unavailable items, paginated (admin view)")]
     [ProducesResponseType<MenuDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetMenu(Guid restaurantId)
+    public async Task<IActionResult> GetMenu(Guid restaurantId, [FromQuery] PaginationQuery query)
     {
-        var menu = await menuItemService.GetAdminMenuAsync(restaurantId);
+        var menu = await menuItemService.GetAdminMenuAsync(restaurantId, query);
         return Ok(menu);
     }
 
