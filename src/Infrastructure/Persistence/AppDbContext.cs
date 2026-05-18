@@ -9,6 +9,8 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<Restaurant> Restaurants => Set<Restaurant>();
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<MenuItem> MenuItems => Set<MenuItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

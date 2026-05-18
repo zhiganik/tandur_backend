@@ -103,6 +103,10 @@ public static class DependencyConfig
         services.AddScoped<IOtpSessionService, RedisOtpSessionService>();
         services.AddScoped<IRestaurantRepository, RestaurantRepository>();
         services.AddScoped<IRestaurantService, RestaurantService>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IMenuItemRepository, MenuItemRepository>();
+        services.AddScoped<IMenuItemService, MenuItemService>();
         return services;
     }
 

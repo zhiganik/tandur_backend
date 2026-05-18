@@ -1,0 +1,204 @@
+using Core.Domain.Entities;
+using Core.Domain.Enums;
+using Core.DTOs.Categories;
+using Core.Interfaces.Repositories;
+using Core.Services;
+using Moq;
+
+namespace Api.Tests.Categories;
+
+[TestFixture]
+public class CategoryServiceTests
+{
+    private Mock<ICategoryRepository> _repo = null!;
+    private CategoryService _service = null!;
+
+    [SetUp]
+    public void SetUp()
+    {
+        _repo = new Mock<ICategoryRepository>();
+        _service = new CategoryService(_repo.Object);
+    }
+
+    // GetVisibleByRestaurantAsync
+    [Test]
+    public async Task GetVisibleByRestaurantAsync_ReturnsMappedDtos()
+    {
+        var restaurantId = Guid.NewGuid();
+        _repo.Setup(r => r.GetVisibleByRestaurantAsync(restaurantId))
+            .ReturnsAsync([MakeCategory("Starters", restaurantId), MakeCategory("Mains", restaurantId)]);
+
+        var result = await _service.GetVisibleByRestaurantAsync(restaurantId);
+
+        Assert.That(result, Has.Count.EqualTo(2));
+        Assert.That(result.Select(c => c.Name), Is.EquivalentTo(new[] { "Starters", "Mains" }));
+    }
+
+    // GetAllByRestaurantAsync
+    [Test]
+    public async Task GetAllByRestaurantAsync_ReturnsAllIncludingHidden()
+    {
+        var restaurantId = Guid.NewGuid();
+        _repo.Setup(r => r.GetAllByRestaurantAsync(restaurantId))
+            .ReturnsAsync([MakeCategory("Visible", restaurantId, isVisible: true), MakeCategory("Hidden", restaurantId, isVisible: false)]);
+
+        var result = await _service.GetAllByRestaurantAsync(restaurantId);
+
+        Assert.That(result, Has.Count.EqualTo(2));
+    }
+
+    // GetByIdAsync
+    [Test]
+    public async Task GetByIdAsync_ExistingId_ReturnsDto()
+    {
+        var category = MakeCategory("Desserts");
+        _repo.Setup(r => r.GetByIdAsync(category.Id)).ReturnsAsync(category);
+
+        var result = await _service.GetByIdAsync(category.Id);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Name, Is.EqualTo("Desserts"));
+    }
+
+    [Test]
+    public async Task GetByIdAsync_NonExistingId_ReturnsNull()
+    {
+        _repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Category?)null);
+
+        var result = await _service.GetByIdAsync(Guid.NewGuid());
+
+        Assert.That(result, Is.Null);
+    }
+
+    // CreateAsync
+    [Test]
+    public async Task CreateAsync_BuildsEntityAndCallsRepository()
+    {
+        var restaurantId = Guid.NewGuid();
+        _repo.Setup(r => r.AddAsync(It.IsAny<Category>())).ReturnsAsync((Category c) => c);
+
+        var result = await _service.CreateAsync(restaurantId, new CreateCategoryRequest
+        {
+            Name = "Cold Dishes",
+            SortOrder = 1,
+            IsVisible = true,
+        });
+
+        Assert.That(result.Name, Is.EqualTo("Cold Dishes"));
+        Assert.That(result.RestaurantId, Is.EqualTo(restaurantId));
+        _repo.Verify(r => r.AddAsync(It.Is<Category>(c => c.Name == "Cold Dishes")), Times.Once);
+    }
+
+    // UpdateAsync
+    [Test]
+    public async Task UpdateAsync_ExistingId_UpdatesFields()
+    {
+        var category = MakeCategory("Old");
+        _repo.Setup(r => r.GetByIdAsync(category.Id)).ReturnsAsync(category);
+        _repo.Setup(r => r.UpdateAsync(category)).Returns(Task.CompletedTask);
+
+        var result = await _service.UpdateAsync(category.Id, new UpdateCategoryRequest
+        {
+            Name = "New",
+            SortOrder = 2,
+            IsVisible = false,
+        });
+
+        Assert.That(result!.Name, Is.EqualTo("New"));
+        Assert.That(result.IsVisible, Is.False);
+        _repo.Verify(r => r.UpdateAsync(category), Times.Once);
+    }
+
+    [Test]
+    public async Task UpdateAsync_NonExistingId_ReturnsNull()
+    {
+        _repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Category?)null);
+
+        var result = await _service.UpdateAsync(Guid.NewGuid(), new UpdateCategoryRequest { Name = "X" });
+
+        Assert.That(result, Is.Null);
+        _repo.Verify(r => r.UpdateAsync(It.IsAny<Category>()), Times.Never);
+    }
+
+    // PatchAsync
+    [Test]
+    public async Task PatchAsync_TogglesVisibility()
+    {
+        var category = MakeCategory("C", isVisible: true);
+        _repo.Setup(r => r.GetByIdAsync(category.Id)).ReturnsAsync(category);
+        _repo.Setup(r => r.UpdateAsync(category)).Returns(Task.CompletedTask);
+
+        var result = await _service.PatchAsync(category.Id, new PatchCategoryRequest { IsVisible = false });
+
+        Assert.That(result!.IsVisible, Is.False);
+    }
+
+    [Test]
+    public async Task PatchAsync_NullFields_DoNotChangeValues()
+    {
+        var category = MakeCategory("C", isVisible: true, sortOrder: 5);
+        _repo.Setup(r => r.GetByIdAsync(category.Id)).ReturnsAsync(category);
+        _repo.Setup(r => r.UpdateAsync(category)).Returns(Task.CompletedTask);
+
+        var result = await _service.PatchAsync(category.Id, new PatchCategoryRequest());
+
+        Assert.That(result!.IsVisible, Is.True);
+        Assert.That(result.SortOrder, Is.EqualTo(5));
+    }
+
+    [Test]
+    public async Task PatchAsync_NonExistingId_ReturnsNull()
+    {
+        _repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Category?)null);
+
+        var result = await _service.PatchAsync(Guid.NewGuid(), new PatchCategoryRequest { IsVisible = true });
+
+        Assert.That(result, Is.Null);
+    }
+
+    // DeleteAsync
+    [Test]
+    public async Task DeleteAsync_WithNoItems_ReturnsDeleted()
+    {
+        var category = MakeCategory("C");
+        _repo.Setup(r => r.GetByIdAsync(category.Id)).ReturnsAsync(category);
+        _repo.Setup(r => r.HasActiveItemsAsync(category.Id)).ReturnsAsync(false);
+        _repo.Setup(r => r.DeleteAsync(category.Id)).ReturnsAsync(true);
+
+        var result = await _service.DeleteAsync(category.Id);
+
+        Assert.That(result, Is.EqualTo(DeleteCategoryResult.Deleted));
+    }
+
+    [Test]
+    public async Task DeleteAsync_WithItems_ReturnsHasItems()
+    {
+        var category = MakeCategory("C");
+        _repo.Setup(r => r.GetByIdAsync(category.Id)).ReturnsAsync(category);
+        _repo.Setup(r => r.HasActiveItemsAsync(category.Id)).ReturnsAsync(true);
+
+        var result = await _service.DeleteAsync(category.Id);
+
+        Assert.That(result, Is.EqualTo(DeleteCategoryResult.HasItems));
+        _repo.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
+    }
+
+    [Test]
+    public async Task DeleteAsync_NonExistingId_ReturnsNotFound()
+    {
+        _repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Category?)null);
+
+        var result = await _service.DeleteAsync(Guid.NewGuid());
+
+        Assert.That(result, Is.EqualTo(DeleteCategoryResult.NotFound));
+    }
+
+    private static Category MakeCategory(string name, Guid? restaurantId = null, bool isVisible = true, int sortOrder = 0) =>
+        new()
+        {
+            RestaurantId = restaurantId ?? Guid.NewGuid(),
+            Name = name,
+            SortOrder = sortOrder,
+            IsVisible = isVisible,
+        };
+}

@@ -13,6 +13,9 @@ public class Restaurant
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public ICollection<Category> Categories { get; set; } = [];
+    public ICollection<MenuItem> MenuItems { get; set; } = [];
+
     public bool IsOpenNow()
     {
         try
