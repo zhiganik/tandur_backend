@@ -32,10 +32,12 @@ public class R2StorageService : IStorageService, IDisposable
     {
         await _client.PutObjectAsync(new PutObjectRequest
         {
-            BucketName  = _bucket,
-            Key         = key,
-            InputStream = stream,
-            ContentType = contentType,
+            BucketName           = _bucket,
+            Key                  = key,
+            InputStream          = stream,
+            ContentType          = contentType,
+            DisablePayloadSigning = true, // R2 does not support STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER
+            UseChunkEncoding     = false,
         });
 
         return $"{_baseUrl}/{key}";
