@@ -9,7 +9,9 @@ public class RedisOtpService(IDistributedCache cache) : IOtpService
 
     public async Task<string> GenerateAsync(string key, TimeSpan expiry)
     {
-        var code = Random.Shared.Next(100_000, 999_999).ToString();
+        // TODO: restore random generation before production
+        // var code = Random.Shared.Next(100_000, 999_999).ToString();
+        var code = "111111";
         var options = new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = expiry };
         await cache.SetStringAsync(OtpKey(key), code, options);
         return code;
