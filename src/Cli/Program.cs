@@ -65,8 +65,8 @@ var user = new AppUser
     Email = email,
     FirstName = userName,
     LastName = string.Empty,
-    EmailConfirmed = true,
-    MustChangePassword = true,
+    EmailConfirmed = false,
+    MustChangePassword = false,
 };
 
 var result = await userManager.CreateAsync(user, password);
