@@ -68,6 +68,28 @@ Follow the same format as `docs/api-changelog.md`. The file should be self-conta
 ### 2. ...
 ```
 
-**Step 5 — Confirm**
+**Step 5 — Update `docs/api-changelog.md`**
 
-Tell the user the filename that was created. Nothing else needed.
+Open `docs/api-changelog.md`. Find the table under the matching date heading (e.g. `## 2026-05-19`). If the heading for today's date does not exist yet, insert it above the previous date's heading in the format:
+
+```markdown
+## YYYY-MM-DD
+
+| File | Summary |
+|------|---------|
+
+---
+```
+
+Add a new row to the table for the file just created:
+
+```markdown
+| [<slug>](changes/<filename>.md) | <one-line summary, ⚠️ if breaking> |
+```
+
+- `<slug>` is the filename without the date prefix and `.md` extension (e.g. `add-category-sort`)
+- Summary should be concise (under 80 chars). Append ` ⚠️` if the change is breaking.
+
+**Step 6 — Confirm**
+
+Tell the user the filename that was created and that `api-changelog.md` was updated. Nothing else needed.
