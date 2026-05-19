@@ -91,56 +91,6 @@ public class UserServiceTests
         Assert.That(result.Data[0].PhoneNumberConfirmed, Is.False);
     }
 
-    // UpdateProfileAsync
-    [Test]
-    public async Task UpdateProfileAsync_NonExistingUser_ReturnsNotFound()
-    {
-        _repo.Setup(r => r.GetByIdAsync(It.IsAny<string>())).ReturnsAsync((AppUser?)null);
-
-        var result = await _service.UpdateProfileAsync("missing-id", new UpdateProfileRequest
-        {
-            FirstName = "A", LastName = "B", PhoneNumber = "+1234567890",
-        });
-
-        Assert.That(result, Is.InstanceOf<UserUpdateResult.NotFound>());
-        _repo.Verify(r => r.UpdateAsync(It.IsAny<AppUser>()), Times.Never);
-    }
-
-    [Test]
-    public async Task UpdateProfileAsync_Success_ReturnsSuccess()
-    {
-        var user = MakeUser("u1", "Old", "Name");
-        _repo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
-        _repo.Setup(r => r.UpdateAsync(user)).ReturnsAsync((true, Array.Empty<string>()));
-
-        var result = await _service.UpdateProfileAsync(user.Id, new UpdateProfileRequest
-        {
-            FirstName = "New", LastName = "Name", PhoneNumber = "+9998887766",
-        });
-
-        Assert.That(result, Is.InstanceOf<UserUpdateResult.Success>());
-        Assert.That(user.FirstName, Is.EqualTo("New"));
-        Assert.That(user.PhoneNumberConfirmed, Is.True);
-    }
-
-    [Test]
-    public async Task UpdateProfileAsync_IdentityFailure_ReturnsFailed()
-    {
-        var user   = MakeUser("u1", "Old", "Name");
-        var errors = new[] { "Email already taken." };
-        _repo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
-        _repo.Setup(r => r.UpdateAsync(user)).ReturnsAsync((false, errors));
-
-        var result = await _service.UpdateProfileAsync(user.Id, new UpdateProfileRequest
-        {
-            FirstName = "A", LastName = "B", PhoneNumber = "+1234567890",
-        });
-
-        var failed = result as UserUpdateResult.Failed;
-        Assert.That(failed, Is.Not.Null);
-        Assert.That(failed!.Errors, Contains.Item("Email already taken."));
-    }
-
     // DeleteAsync
     [Test]
     public async Task DeleteAsync_RevokesTokensAndDelegatesDelete()

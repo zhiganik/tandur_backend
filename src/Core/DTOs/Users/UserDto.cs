@@ -2,13 +2,6 @@ using Core.DTOs.Restaurants;
 
 namespace Core.DTOs.Users;
 
-public class UpdateProfileRequest
-{
-    public string FirstName   { get; init; } = string.Empty;
-    public string LastName    { get; init; } = string.Empty;
-    public string PhoneNumber { get; init; } = string.Empty;
-}
-
 public class UserDto
 {
     public string                              Id                   { get; init; } = string.Empty;

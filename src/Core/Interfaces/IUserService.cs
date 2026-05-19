@@ -8,7 +8,6 @@ public interface IUserService
 {
     Task<PagedResult<UserDto>>  GetPagedAsync(PaginationQuery query, bool maskPii);
     Task<UserDto?>              GetByIdAsync(string userId);
-    Task<UserUpdateResult>      UpdateProfileAsync(string userId, UpdateProfileRequest request);
     Task<bool>                  DeleteAsync(string userId);
     Task<MeDto?>                GetMeAsync(string userId);
     Task<UserUpdateResult>      UpdateNameAsync(string userId, string firstName, string lastName);

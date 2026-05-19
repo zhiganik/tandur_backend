@@ -4,6 +4,28 @@ Changes are listed newest-first. Each entry describes what changed, the before/a
 
 ---
 
+## 2026-05-19 — Remove PUT /api/admin/users/me; restrict user deletion to SuperAdmin
+
+### 1. `PUT /api/admin/users/me` — **removed**
+
+**Before:** `Admin` and `SuperAdmin` could call this to update their own `firstName`, `lastName`, and `phoneNumber`. The phone was saved as confirmed without OTP verification.
+
+**After:** endpoint is gone. Use the existing endpoints on `GET /api/me` instead:
+- Update name: `PATCH /api/me` with `{ "firstName": "...", "lastName": "..." }`
+- Change phone: `POST /api/me/phone` → `PATCH /api/me/phone` (OTP-verified)
+
+---
+
+### 2. `DELETE /api/admin/users/{id}` — **access restricted to SuperAdmin**
+
+**Before:** accessible by `Admin` and `SuperAdmin`.
+
+**After:** `SuperAdmin` only. `Admin` tokens now get **403**.
+
+Route and behaviour are otherwise unchanged.
+
+---
+
 ## 2026-05-19 — RBAC Overhaul: SuperAdmin vs Admin split + Restaurant assignments
 
 ### Roles quick reference

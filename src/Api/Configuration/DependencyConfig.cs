@@ -2,7 +2,6 @@
 using Core.Domain.Constants;
 using Core.Domain.Entities;
 using Core.DTOs.Auth.Validators;
-using Core.DTOs.Users.Validators;
 using Core.Interfaces;
 using Core.Interfaces.Repositories;
 using Core.Services;

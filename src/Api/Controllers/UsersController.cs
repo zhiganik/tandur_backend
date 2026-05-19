@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Core.Domain.Constants;
 using Core.Domain.Entities;
 using Core.DTOs.Common;
@@ -51,31 +50,12 @@ public class UsersController(
         return user is null ? NotFound() : Ok(user);
     }
 
-    [HttpPut("me")]
-    [SwaggerOperation(Summary = "Update the current admin's own profile")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateProfileRequest request)
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId is null) return Forbid();
-
-        var result = await userService.UpdateProfileAsync(userId, request);
-        return result switch
-        {
-            UserUpdateResult.NotFound        => NotFound(),
-            UserUpdateResult.Success         => NoContent(),
-            UserUpdateResult.Failed f        => BadRequest(new { errors = f.Errors }),
-            _                                => StatusCode(500),
-        };
-    }
-
     [HttpDelete("{id}")]
-    [SwaggerOperation(Summary = "Delete a user account and revoke all their tokens")]
+    [Authorize(Policy = TandurPolicies.SuperAdminOnly)]
+    [SwaggerOperation(Summary = "Delete a user account and revoke all their tokens (SuperAdmin only)")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteUser(string id)
     {

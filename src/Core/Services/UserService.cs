@@ -51,20 +51,6 @@ public class UserService(
         return ToDto(user, roles, maskPii: false, restaurants);
     }
 
-    public async Task<UserUpdateResult> UpdateProfileAsync(string userId, UpdateProfileRequest request)
-    {
-        var user = await repository.GetByIdAsync(userId);
-        if (user is null) return new UserUpdateResult.NotFound();
-
-        user.FirstName            = request.FirstName;
-        user.LastName             = request.LastName;
-        user.PhoneNumber          = request.PhoneNumber;
-        user.PhoneNumberConfirmed = true;
-
-        var (success, errors) = await repository.UpdateAsync(user);
-        return success ? new UserUpdateResult.Success() : new UserUpdateResult.Failed(errors);
-    }
-
     public async Task<bool> DeleteAsync(string userId)
     {
         await refreshTokenService.RevokeAllForUserAsync(userId);
