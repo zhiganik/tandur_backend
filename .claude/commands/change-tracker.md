@@ -1,67 +1,73 @@
-Track all frontend-affecting changes made in the current session and append them to `docs/api-changelog.md`.
+When the user appends **TRACK CHANGE** to any request, complete the task first, then create a single standalone `.md` file in `docs/changes/` that documents only that specific change. Never append to a shared file — one task, one file.
 
-A "frontend-affecting change" is any of the following:
-- New, removed, or renamed API route (any controller)
-- Changed HTTP method on an existing route
-- Changed authorization requirement (policy, role, or auth scheme)
-- Added, removed, or renamed field in a request DTO
-- Added, removed, or renamed field in a response DTO or record (including `MeDto`, `UserDto`, `RestaurantDto`, etc.)
-- Changed response status code meaning or new status codes on an existing route
-- New or removed endpoint entirely
+## When this runs
 
-Changes that are NOT frontend-affecting and should be skipped:
-- Internal refactoring (service layer, repository, DI wiring)
-- Test changes
-- EF migrations (unless a field name changes)
-- Infrastructure configuration
+Only when the user's message ends with (or contains) **TRACK CHANGE**. Do not run otherwise.
 
 ## Steps
 
-**Step 1 — Identify changes**
+**Step 1 — Finish the task first**
 
-Read git diff for all `src/Api/Controllers/*.cs` and `src/Core/DTOs/**/*.cs` files to find what changed since the last commit (or the beginning of the session if nothing is committed yet):
+Complete whatever the user asked for. The change log is written after the work is done.
 
+**Step 2 — Identify frontend-affecting changes**
+
+Run:
 ```
 git diff HEAD -- src/Api/Controllers src/Core/DTOs
 ```
 
-If nothing is committed yet, compare to the remote:
-```
-git diff origin/main -- src/Api/Controllers src/Core/DTOs
-```
+A "frontend-affecting change" includes:
+- New, removed, or renamed API route
+- Changed HTTP method on an existing route
+- Changed authorization requirement (role or policy)
+- Added, removed, or renamed field in a request or response DTO
+- Changed response status codes on an existing route
 
-**Step 2 — Build the entry**
+Skip: internal refactoring, test changes, EF migrations (unless a field name changes), DI/infrastructure.
 
-For each frontend-affecting change, write a clear entry with:
-- The route and HTTP method
-- **Before:** what the old behaviour/shape was (use `did not exist` for new endpoints)
-- **After:** what the new behaviour/shape is
-- Required token/role
-- Full JSON shape for any changed request or response DTO (with comments for new/changed fields marked `// NEW` or `// CHANGED`)
-- Status codes if they changed
+**Step 3 — Choose a filename**
 
-Group related changes under a single dated heading. Use today's date: **$CURRENT_DATE** (resolve this to the actual date at invocation time).
+Use the pattern: `docs/changes/YYYY-MM-DD-<slug>.md`
 
-**Step 3 — Prepend to the changelog**
+The slug should be 3–6 words that describe the specific change, kebab-cased. Examples:
+- `docs/changes/2026-05-19-add-category-sort.md`
+- `docs/changes/2026-05-19-currency-moved-to-restaurant.md`
+- `docs/changes/2026-05-19-user-search-filter.md`
 
-Open `docs/api-changelog.md`. Insert the new entry **after the first two header lines** (the `# API Changelog` title and the description paragraph) but **before** the first existing `---` separator, so the file stays newest-first.
+Use today's date for YYYY-MM-DD.
 
-The entry format:
+**Step 4 — Write the file**
+
+Follow the same format as `docs/api-changelog.md`. The file should be self-contained — a reader with no context should understand what changed.
 
 ```markdown
+# <Short title>
+
+**Date:** YYYY-MM-DD
+**Auth required:** <token type and minimum role>
+
 ---
 
-## YYYY-MM-DD — <short title describing what changed>
+## Changes
 
-### 1. `METHOD /route` — **description**
+### 1. `METHOD /route` — **what changed**
 
 **Before:** ...
 
 **After:** ...
 
-...
+```jsonc
+// Show full DTO shape with // NEW, // CHANGED, // REMOVED comments
 ```
 
-**Step 4 — Confirm**
+> ⚠️ Breaking — note if this requires a frontend code change
 
-Tell the user which entries were added and show them the first 30 lines of the updated file so they can verify placement.
+---
+
+### 2. ...
+```
+
+**Step 5 — Confirm**
+
+Tell the user the filename that was created. Nothing else needed.
