@@ -39,10 +39,12 @@ public class AdminRestaurantsController(IRestaurantService restaurantService) : 
     }
 
     [HttpPost]
-    [SwaggerOperation(Summary = "Create a new restaurant")]
+    [Authorize(Policy = TandurPolicies.SuperAdminOnly)]
+    [SwaggerOperation(Summary = "Create a new restaurant (SuperAdmin only)")]
     [ProducesResponseType<RestaurantDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create([FromBody] CreateRestaurantRequest request)
     {
         var restaurant = await restaurantService.CreateAsync(request);
@@ -62,10 +64,12 @@ public class AdminRestaurantsController(IRestaurantService restaurantService) : 
     }
 
     [HttpPatch("{id:guid}")]
-    [SwaggerOperation(Summary = "Partial update — e.g. toggle active status")]
+    [Authorize(Policy = TandurPolicies.SuperAdminOnly)]
+    [SwaggerOperation(Summary = "Partial update — e.g. toggle active status (SuperAdmin only)")]
     [ProducesResponseType<RestaurantDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Patch(Guid id, [FromBody] PatchRestaurantRequest request)
     {
@@ -74,9 +78,11 @@ public class AdminRestaurantsController(IRestaurantService restaurantService) : 
     }
 
     [HttpDelete("{id:guid}")]
-    [SwaggerOperation(Summary = "Soft-delete a restaurant (sets isActive = false)")]
+    [Authorize(Policy = TandurPolicies.SuperAdminOnly)]
+    [SwaggerOperation(Summary = "Soft-delete a restaurant (sets isActive = false) (SuperAdmin only)")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
     {

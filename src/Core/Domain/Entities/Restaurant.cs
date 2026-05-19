@@ -15,6 +15,7 @@ public class Restaurant
 
     public ICollection<Category> Categories { get; set; } = [];
     public ICollection<MenuItem> MenuItems { get; set; } = [];
+    public ICollection<AppUser> AssignedAdmins { get; set; } = [];
 
     public bool IsOpenNow()
     {

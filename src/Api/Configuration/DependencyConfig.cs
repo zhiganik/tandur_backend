@@ -151,7 +151,9 @@ public static class DependencyConfig
 
         services.AddAuthorizationBuilder()
             .AddPolicy(TandurPolicies.AdminPanel, policy =>
-                policy.RequireRole(TandurRoles.Admin, TandurRoles.SuperAdmin));
+                policy.RequireRole(TandurRoles.Admin, TandurRoles.SuperAdmin))
+            .AddPolicy(TandurPolicies.SuperAdminOnly, policy =>
+                policy.RequireRole(TandurRoles.SuperAdmin));
 
         return services;
     }

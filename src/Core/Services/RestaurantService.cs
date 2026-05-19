@@ -94,6 +94,24 @@ public class RestaurantService(IRestaurantRepository repository) : IRestaurantSe
 
     public Task<bool> DeleteAsync(Guid id) => repository.SoftDeleteAsync(id);
 
+    public async Task<IReadOnlyList<RestaurantSummaryDto>> GetAllSummariesAsync()
+    {
+        var restaurants = await repository.GetAllSummariesAsync();
+        return restaurants.Select(r => new RestaurantSummaryDto(r.Id, r.Name)).ToList();
+    }
+
+    public async Task<IReadOnlyList<RestaurantSummaryDto>> GetSummariesForAdminAsync(string adminUserId)
+    {
+        var restaurants = await repository.GetByAdminAsync(adminUserId);
+        return restaurants.Select(r => new RestaurantSummaryDto(r.Id, r.Name)).ToList();
+    }
+
+    public Task<bool> AssignToAdminAsync(Guid restaurantId, string adminUserId) =>
+        repository.AssignToAdminAsync(restaurantId, adminUserId);
+
+    public Task<bool> UnassignFromAdminAsync(Guid restaurantId, string adminUserId) =>
+        repository.UnassignFromAdminAsync(restaurantId, adminUserId);
+
     private static RestaurantDto ToDto(Restaurant r, double? lat, double? lng) => new()
     {
         Id         = r.Id,

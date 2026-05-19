@@ -81,7 +81,8 @@ public class MeControllerTests
         Id: UserId, FirstName: "John", LastName: "Doe",
         Email: "john@example.com", EmailConfirmed: true,
         Phone: "+79000000000", PhoneNumberConfirmed: true,
-        DateOfBirth: null, Roles: ["User"], CreatedAt: DateTime.UtcNow);
+        DateOfBirth: null, Roles: ["User"], CreatedAt: DateTime.UtcNow,
+        Restaurants: []);
 
     // GetMe
     [Test]

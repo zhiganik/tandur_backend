@@ -12,5 +12,9 @@ public class RestaurantConfiguration : IEntityTypeConfiguration<Restaurant>
         builder.Property(r => r.Name).IsRequired().HasMaxLength(200);
         builder.Property(r => r.Address).IsRequired().HasMaxLength(500);
         builder.Property(r => r.TimeZone).IsRequired().HasMaxLength(100);
+
+        builder.HasMany(r => r.AssignedAdmins)
+               .WithMany(u => u.AssignedRestaurants)
+               .UsingEntity(j => j.ToTable("AdminRestaurantAssignments"));
     }
 }

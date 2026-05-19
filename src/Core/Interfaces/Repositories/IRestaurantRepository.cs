@@ -12,4 +12,9 @@ public interface IRestaurantRepository
     Task<Restaurant>                AddAsync(Restaurant restaurant);
     Task                            UpdateAsync(Restaurant restaurant);
     Task<bool>                      SoftDeleteAsync(Guid id);
+    Task<IReadOnlyList<Restaurant>>                      GetAllSummariesAsync();
+    Task<IReadOnlyList<Restaurant>>                      GetByAdminAsync(string adminUserId);
+    Task<Dictionary<string, IReadOnlyList<Restaurant>>> GetByAdminsAsync(IEnumerable<string> adminUserIds);
+    Task<bool>                                           AssignToAdminAsync(Guid restaurantId, string adminUserId);
+    Task<bool>                                           UnassignFromAdminAsync(Guid restaurantId, string adminUserId);
 }

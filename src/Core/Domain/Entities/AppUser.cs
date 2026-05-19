@@ -9,4 +9,6 @@ public class AppUser : IdentityUser
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool MustChangePassword { get; set; } = false;
     public DateTime? DateOfBirth { get; set; }
+
+    public ICollection<Restaurant> AssignedRestaurants { get; set; } = [];
 }
