@@ -114,6 +114,8 @@ public static class DependencyConfig
         services.AddScoped<IMenuItemService, MenuItemService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IScheduleRepository, ScheduleRepository>();
+        services.AddScoped<IScheduleService, ScheduleService>();
         return services;
     }
 

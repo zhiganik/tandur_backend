@@ -9,14 +9,17 @@ namespace Api.Tests.Restaurants;
 [TestFixture]
 public class RestaurantServiceTests
 {
-    private Mock<IRestaurantRepository> _repo    = null!;
-    private RestaurantService           _service = null!;
+    private Mock<IRestaurantRepository> _repo         = null!;
+    private Mock<IScheduleRepository>   _scheduleRepo = null!;
+    private RestaurantService           _service      = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _repo    = new Mock<IRestaurantRepository>();
-        _service = new RestaurantService(_repo.Object);
+        _repo         = new Mock<IRestaurantRepository>();
+        _scheduleRepo = new Mock<IScheduleRepository>();
+        _scheduleRepo.Setup(r => r.SeedDefaultScheduleAsync(It.IsAny<Guid>())).Returns(Task.CompletedTask);
+        _service      = new RestaurantService(_repo.Object, _scheduleRepo.Object);
     }
 
     // GetAllAsync
@@ -101,12 +104,13 @@ public class RestaurantServiceTests
         var result = await _service.CreateAsync(new CreateRestaurantRequest
         {
             Name = "New Place", Address = "123 St", Latitude = 43.25, Longitude = 76.95,
-            TimeZone = "UTC", OpenTime = TimeSpan.FromHours(9), CloseTime = TimeSpan.FromHours(22),
+            Currency = "KZT", TimeZone = "UTC",
         });
 
         Assert.That(result.Name, Is.EqualTo("New Place"));
         Assert.That(result.IsActive, Is.True);
         _repo.Verify(x => x.AddAsync(It.Is<Restaurant>(r => r.Name == "New Place")), Times.Once);
+        _scheduleRepo.Verify(x => x.SeedDefaultScheduleAsync(It.IsAny<Guid>()), Times.Once);
     }
 
     // UpdateAsync
@@ -119,8 +123,7 @@ public class RestaurantServiceTests
 
         var result = await _service.UpdateAsync(r.Id, new UpdateRestaurantRequest
         {
-            Name = "New Name", Address = "New Addr", Latitude = 1, Longitude = 2,
-            OpenTime = TimeSpan.FromHours(8), CloseTime = TimeSpan.FromHours(20),
+            Name = "New Name", Address = "New Addr", Latitude = 1, Longitude = 2, Currency = "USD",
         });
 
         Assert.That(result!.Name, Is.EqualTo("New Name"));
@@ -134,7 +137,7 @@ public class RestaurantServiceTests
 
         Assert.That(await _service.UpdateAsync(Guid.NewGuid(), new UpdateRestaurantRequest
         {
-            Name = "X", Address = "X", OpenTime = TimeSpan.Zero, CloseTime = TimeSpan.FromHours(1),
+            Name = "X", Address = "X", Currency = "USD",
         }), Is.Null);
     }
 
@@ -186,9 +189,8 @@ public class RestaurantServiceTests
             Address   = "Test Address",
             Latitude  = lat,
             Longitude = lng,
+            Currency  = "KZT",
             TimeZone  = "UTC",
-            OpenTime  = TimeSpan.FromHours(9),
-            CloseTime = TimeSpan.FromHours(22),
             IsActive  = isActive,
         };
 }

@@ -6,21 +6,37 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class RestaurantRepository(AppDbContext db) : IRestaurantRepository
 {
-    public Task<IReadOnlyList<Restaurant>> GetAllActiveAsync() =>
-        db.Restaurants
+    public Task<IReadOnlyList<Restaurant>> GetAllActiveAsync()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        return db.Restaurants
             .Where(r => r.IsActive)
+            .Include(r => r.Schedules)
+            .Include(r => r.Overrides.Where(o => o.Date == today))
             .OrderBy(r => r.CreatedAt)
             .ToListAsync()
             .ContinueWith(t => (IReadOnlyList<Restaurant>)t.Result);
+    }
 
-    public Task<IReadOnlyList<Restaurant>> GetAllAsync() =>
-        db.Restaurants
+    public Task<IReadOnlyList<Restaurant>> GetAllAsync()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        return db.Restaurants
+            .Include(r => r.Schedules)
+            .Include(r => r.Overrides.Where(o => o.Date == today))
             .OrderBy(r => r.CreatedAt)
             .ToListAsync()
             .ContinueWith(t => (IReadOnlyList<Restaurant>)t.Result);
+    }
 
-    public Task<Restaurant?> GetByIdAsync(Guid id) =>
-        db.Restaurants.FindAsync(id).AsTask()!;
+    public Task<Restaurant?> GetByIdAsync(Guid id)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        return db.Restaurants
+            .Include(r => r.Schedules)
+            .Include(r => r.Overrides.Where(o => o.Date == today))
+            .FirstOrDefaultAsync(r => r.Id == id)!;
+    }
 
     public async Task<Restaurant> AddAsync(Restaurant restaurant)
     {

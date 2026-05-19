@@ -9,27 +9,32 @@ public class Restaurant
     public double Longitude { get; set; }
     public string Currency { get; set; } = string.Empty;
     public string TimeZone { get; set; } = string.Empty;
-    public TimeSpan OpenTime { get; set; }
-    public TimeSpan CloseTime { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public ICollection<Category> Categories { get; set; } = [];
-    public ICollection<MenuItem> MenuItems { get; set; } = [];
-    public ICollection<AppUser> AssignedAdmins { get; set; } = [];
+    public ICollection<Category>                   Categories { get; set; } = [];
+    public ICollection<MenuItem>                   MenuItems  { get; set; } = [];
+    public ICollection<AppUser>                    AssignedAdmins { get; set; } = [];
+    public ICollection<RestaurantSchedule>         Schedules  { get; set; } = [];
+    public ICollection<RestaurantScheduleOverride> Overrides  { get; set; } = [];
 
-    public bool IsOpenNow()
+    public bool IsOpenNow(DateTime? now = null)
     {
         try
         {
-            var tz = TimeZoneInfo.FindSystemTimeZoneById(TimeZone);
-            var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz).TimeOfDay;
-            return localNow >= OpenTime && localNow < CloseTime;
+            var tz        = TimeZoneInfo.FindSystemTimeZoneById(TimeZone);
+            var localTime = TimeZoneInfo.ConvertTimeFromUtc(now ?? DateTime.UtcNow, tz);
+            var today     = DateOnly.FromDateTime(localTime);
+            var timeOfDay = localTime.TimeOfDay;
+
+            var todayOverride = Overrides.FirstOrDefault(o => o.Date == today);
+            if (todayOverride != null)
+                return todayOverride.IsOpenAt(timeOfDay);
+
+            var todaySchedule = Schedules.FirstOrDefault(s => s.DayOfWeek == localTime.DayOfWeek);
+            return todaySchedule?.IsOpenAt(timeOfDay) ?? false;
         }
-        catch
-        {
-            return false;
-        }
+        catch { return false; }
     }
 
     public double DistanceTo(double lat, double lng)

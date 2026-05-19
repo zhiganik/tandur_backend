@@ -14,8 +14,6 @@ public class CreateRestaurantRequestValidator : AbstractValidator<CreateRestaura
         RuleFor(x => x.Currency).NotEmpty().Length(3).Must(CurrencyValidation.IsValidIso4217)
             .WithMessage("'{PropertyName}' must be a valid ISO 4217 currency code (e.g. USD, EUR, KZT).");
         RuleFor(x => x.TimeZone).NotEmpty().MaximumLength(100);
-        RuleFor(x => x.OpenTime).LessThan(x => x.CloseTime)
-            .WithMessage("OpenTime must be before CloseTime.");
     }
 }
 
@@ -29,8 +27,6 @@ public class UpdateRestaurantRequestValidator : AbstractValidator<UpdateRestaura
         RuleFor(x => x.Longitude).InclusiveBetween(-180, 180);
         RuleFor(x => x.Currency).NotEmpty().Length(3).Must(CurrencyValidation.IsValidIso4217)
             .WithMessage("'{PropertyName}' must be a valid ISO 4217 currency code (e.g. USD, EUR, KZT).");
-        RuleFor(x => x.OpenTime).LessThan(x => x.CloseTime)
-            .WithMessage("OpenTime must be before CloseTime.");
     }
 }
 

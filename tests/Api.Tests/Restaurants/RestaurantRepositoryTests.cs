@@ -105,8 +105,7 @@ public class RestaurantRepositoryTests
             Name      = name,
             Address   = "Test Address",
             TimeZone  = "UTC",
-            OpenTime  = TimeSpan.FromHours(9),
-            CloseTime = TimeSpan.FromHours(22),
+            Currency  = "KZT",
             IsActive  = isActive,
         };
 }

@@ -8,9 +8,11 @@ public class AppDbContext : IdentityDbContext<AppUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    public DbSet<Restaurant> Restaurants => Set<Restaurant>();
-    public DbSet<Category> Categories => Set<Category>();
-    public DbSet<MenuItem> MenuItems => Set<MenuItem>();
+    public DbSet<Restaurant>                   Restaurants                   => Set<Restaurant>();
+    public DbSet<Category>                     Categories                    => Set<Category>();
+    public DbSet<MenuItem>                     MenuItems                     => Set<MenuItem>();
+    public DbSet<RestaurantSchedule>           RestaurantSchedules           => Set<RestaurantSchedule>();
+    public DbSet<RestaurantScheduleOverride>   RestaurantScheduleOverrides   => Set<RestaurantScheduleOverride>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

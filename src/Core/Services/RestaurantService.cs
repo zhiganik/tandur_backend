@@ -5,7 +5,7 @@ using Core.Interfaces.Repositories;
 
 namespace Core.Services;
 
-public class RestaurantService(IRestaurantRepository repository) : IRestaurantService
+public class RestaurantService(IRestaurantRepository repository, IScheduleRepository scheduleRepo) : IRestaurantService
 {
     public async Task<IReadOnlyList<RestaurantDto>> GetAllAsync(double? lat, double? lng)
     {
@@ -39,11 +39,10 @@ public class RestaurantService(IRestaurantRepository repository) : IRestaurantSe
             Longitude = request.Longitude,
             Currency  = request.Currency,
             TimeZone  = request.TimeZone,
-            OpenTime  = request.OpenTime,
-            CloseTime = request.CloseTime,
         };
 
         await repository.AddAsync(restaurant);
+        await scheduleRepo.SeedDefaultScheduleAsync(restaurant.Id);
         return ToDto(restaurant, null, null);
     }
 
@@ -57,8 +56,6 @@ public class RestaurantService(IRestaurantRepository repository) : IRestaurantSe
         restaurant.Latitude  = request.Latitude;
         restaurant.Longitude = request.Longitude;
         restaurant.Currency  = request.Currency;
-        restaurant.OpenTime  = request.OpenTime;
-        restaurant.CloseTime = request.CloseTime;
 
         await repository.UpdateAsync(restaurant);
         return ToDto(restaurant, null, null);
@@ -105,8 +102,6 @@ public class RestaurantService(IRestaurantRepository repository) : IRestaurantSe
         Longitude  = r.Longitude,
         Currency   = r.Currency,
         TimeZone   = r.TimeZone,
-        OpenTime   = r.OpenTime,
-        CloseTime  = r.CloseTime,
         IsActive   = r.IsActive,
         IsOpenNow  = r.IsOpenNow(),
         DistanceKm = lat.HasValue && lng.HasValue ? r.DistanceTo(lat.Value, lng.Value) : null,

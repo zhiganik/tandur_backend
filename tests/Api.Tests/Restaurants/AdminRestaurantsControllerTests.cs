@@ -55,7 +55,7 @@ public class AdminRestaurantsControllerTests
         var request = new CreateRestaurantRequest
         {
             Name = "New", Address = "Addr", Latitude = 0, Longitude = 0,
-            Currency = "USD", TimeZone = "UTC", OpenTime = TimeSpan.FromHours(9), CloseTime = TimeSpan.FromHours(22),
+            Currency = "USD", TimeZone = "UTC",
         };
         _service.Setup(s => s.CreateAsync(request)).ReturnsAsync(dto);
 
@@ -74,7 +74,7 @@ public class AdminRestaurantsControllerTests
 
         Assert.That(await _controller.Update(id, new UpdateRestaurantRequest
         {
-            Name = "U", Address = "A", OpenTime = TimeSpan.FromHours(9), CloseTime = TimeSpan.FromHours(22),
+            Name = "U", Address = "A", Currency = "USD",
         }), Is.InstanceOf<OkObjectResult>());
     }
 
@@ -86,7 +86,7 @@ public class AdminRestaurantsControllerTests
 
         Assert.That(await _controller.Update(Guid.NewGuid(), new UpdateRestaurantRequest
         {
-            Name = "X", Address = "X", OpenTime = TimeSpan.Zero, CloseTime = TimeSpan.FromHours(1),
+            Name = "X", Address = "X", Currency = "USD",
         }), Is.InstanceOf<NotFoundResult>());
     }
 
