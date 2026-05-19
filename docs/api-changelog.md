@@ -8,6 +8,7 @@ Each change is documented in its own file under `docs/changes/`. Listed newest-f
 
 | File | Summary |
 |------|---------|
+| [restaurant-schedule-and-closure](changes/2026-05-19-restaurant-schedule-and-closure.md) | Restaurant schedule & closure — replaces openTime/closeTime with 2-layer schedule system ⚠️ |
 | [auto-sortorder-on-create](changes/2026-05-19-auto-sortorder-on-create.md) | `sortOrder` auto-assigned on category and menu item creation |
 | [user-search-filter-sort](changes/2026-05-19-user-search-filter-sort.md) | User list — search, filter by role/restaurant, sort by date |
 | [pagination-removed-list-endpoints](changes/2026-05-19-pagination-removed-list-endpoints.md) | Pagination removed from restaurant, category, and menu list endpoints ⚠️ |
