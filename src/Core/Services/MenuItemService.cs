@@ -91,6 +91,7 @@ public class MenuItemService(IMenuItemRepository menuItemRepo, ICategoryReposito
         item.CategoryId       = request.CategoryId;
         item.SortOrder        = request.SortOrder;
         item.IsAvailable      = request.IsAvailable;
+        item.IsActive         = request.IsActive;
 
         await menuItemRepo.UpdateAsync(item);
         return ToMenuItemDto(item);
@@ -102,6 +103,7 @@ public class MenuItemService(IMenuItemRepository menuItemRepo, ICategoryReposito
         if (item is null) return null;
 
         if (request.IsAvailable.HasValue) item.IsAvailable = request.IsAvailable.Value;
+        if (request.IsActive.HasValue)    item.IsActive    = request.IsActive.Value;
         if (request.Price.HasValue)       item.Price       = request.Price.Value;
         if (request.CategoryId.HasValue)  item.CategoryId  = request.CategoryId.Value;
         if (request.SortOrder.HasValue)   item.SortOrder   = request.SortOrder.Value;

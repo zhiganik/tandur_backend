@@ -23,11 +23,13 @@ public class UpdateMenuItemRequest
     public Guid CategoryId { get; init; }
     public int SortOrder { get; init; }
     public bool IsAvailable { get; init; }
+    public bool IsActive { get; init; } = true;
 }
 
 public class PatchMenuItemRequest
 {
     public bool? IsAvailable { get; init; }
+    public bool? IsActive { get; init; }
     public decimal? Price { get; init; }
     public Guid? CategoryId { get; init; }
     public int? SortOrder { get; init; }
