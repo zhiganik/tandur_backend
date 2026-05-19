@@ -14,10 +14,10 @@ public class UserService(
     IRefreshTokenService refreshTokenService,
     IRestaurantRepository restaurantRepository) : IUserService
 {
-    public async Task<PagedResult<UserDto>> GetPagedAsync(PaginationQuery query, bool maskPii)
+    public async Task<PagedResult<UserDto>> GetPagedAsync(UserQuery query, bool maskPii)
     {
-        var total    = await repository.CountAsync();
-        var users    = await repository.GetPagedAsync(query.Page, query.Limit);
+        var total    = await repository.CountAsync(query);
+        var users    = await repository.GetPagedAsync(query);
         var rolesMap = await repository.GetRolesMapAsync(users.Select(u => u.Id));
 
         var adminIds      = users.Where(u => rolesMap.GetValueOrDefault(u.Id, []).Contains(TandurRoles.Admin))

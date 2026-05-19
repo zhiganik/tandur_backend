@@ -26,12 +26,12 @@ public class UsersController(
 {
     [HttpGet]
     [Authorize(Policy = TandurPolicies.SuperAdminOnly)]
-    [SwaggerOperation(Summary = "List all users with roles — PII unmasked (SuperAdmin only)")]
+    [SwaggerOperation(Summary = "List users — search by email/phone/ID, filter by role or restaurant, sort by registration date (SuperAdmin only)")]
     [ProducesResponseType<PagedResult<UserDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetUsers([FromQuery] PaginationQuery query)
+    public async Task<IActionResult> GetUsers([FromQuery] UserQuery query)
     {
         var result = await userService.GetPagedAsync(query, maskPii: false);
         return Ok(result);

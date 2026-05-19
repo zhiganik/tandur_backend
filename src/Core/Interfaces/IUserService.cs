@@ -6,7 +6,7 @@ namespace Core.Interfaces;
 
 public interface IUserService
 {
-    Task<PagedResult<UserDto>>  GetPagedAsync(PaginationQuery query, bool maskPii);
+    Task<PagedResult<UserDto>>  GetPagedAsync(UserQuery query, bool maskPii);
     Task<UserDto?>              GetByIdAsync(string userId);
     Task<bool>                  DeleteAsync(string userId);
     Task<MeDto?>                GetMeAsync(string userId);

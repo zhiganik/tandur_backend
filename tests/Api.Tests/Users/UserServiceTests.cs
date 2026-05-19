@@ -16,7 +16,7 @@ public class UserServiceTests
     private Mock<IRestaurantRepository> _restaurantRepo     = null!;
     private UserService                 _service            = null!;
 
-    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
+    private static readonly UserQuery DefaultQuery = new() { Page = 1, Limit = 20 };
 
     [SetUp]
     public void SetUp()
@@ -42,8 +42,8 @@ public class UserServiceTests
             MakeUser("alice", "Alice", "Smith", email: "a@x.com"),
             MakeUser("bob",   "Bob",   "Jones", email: "b@x.com"),
         };
-        _repo.Setup(r => r.CountAsync()).ReturnsAsync(2);
-        _repo.Setup(r => r.GetPagedAsync(1, 20)).ReturnsAsync(users);
+        _repo.Setup(r => r.CountAsync(It.IsAny<UserQuery>())).ReturnsAsync(2);
+        _repo.Setup(r => r.GetPagedAsync(It.IsAny<UserQuery>())).ReturnsAsync(users);
         _repo.Setup(r => r.GetRolesMapAsync(It.IsAny<IEnumerable<string>>()))
             .ReturnsAsync(new Dictionary<string, IReadOnlyList<string>>
             {
@@ -63,8 +63,8 @@ public class UserServiceTests
     public async Task GetPagedAsync_MasksEmailAndPhone()
     {
         var user = MakeUser("u1", "John", "Doe", email: "john@example.com", phone: "+79001234567");
-        _repo.Setup(r => r.CountAsync()).ReturnsAsync(1);
-        _repo.Setup(r => r.GetPagedAsync(1, 20)).ReturnsAsync([user]);
+        _repo.Setup(r => r.CountAsync(It.IsAny<UserQuery>())).ReturnsAsync(1);
+        _repo.Setup(r => r.GetPagedAsync(It.IsAny<UserQuery>())).ReturnsAsync([user]);
         _repo.Setup(r => r.GetRolesMapAsync(It.IsAny<IEnumerable<string>>()))
             .ReturnsAsync(new Dictionary<string, IReadOnlyList<string>> { [user.Id] = [] });
 
@@ -80,8 +80,8 @@ public class UserServiceTests
     public async Task GetPagedAsync_IncludesEmailAndPhoneConfirmedFlags()
     {
         var user = MakeUser("u1", "Ann", "Lee", emailConfirmed: true, phoneConfirmed: false);
-        _repo.Setup(r => r.CountAsync()).ReturnsAsync(1);
-        _repo.Setup(r => r.GetPagedAsync(1, 20)).ReturnsAsync([user]);
+        _repo.Setup(r => r.CountAsync(It.IsAny<UserQuery>())).ReturnsAsync(1);
+        _repo.Setup(r => r.GetPagedAsync(It.IsAny<UserQuery>())).ReturnsAsync([user]);
         _repo.Setup(r => r.GetRolesMapAsync(It.IsAny<IEnumerable<string>>()))
             .ReturnsAsync(new Dictionary<string, IReadOnlyList<string>> { [user.Id] = [] });
 

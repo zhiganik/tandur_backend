@@ -1,4 +1,5 @@
 using Core.Domain.Entities;
+using Core.DTOs.Users;
 using Core.Interfaces.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -7,15 +8,48 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class UserRepository(AppDbContext db, UserManager<AppUser> userManager) : IUserRepository
 {
-    public Task<IReadOnlyList<AppUser>> GetPagedAsync(int page, int limit) =>
-        db.Users
-            .OrderBy(u => u.CreatedAt)
-            .Skip((page - 1) * limit)
-            .Take(limit)
+    public Task<IReadOnlyList<AppUser>> GetPagedAsync(UserQuery query)
+    {
+        var q       = ApplyFilters(db.Users.AsQueryable(), query);
+        var ordered = query.Sort == "asc"
+            ? q.OrderBy(u => u.CreatedAt)
+            : q.OrderByDescending(u => u.CreatedAt);
+
+        return ordered
+            .Skip((query.Page - 1) * query.Limit)
+            .Take(query.Limit)
             .ToListAsync()
             .ContinueWith(t => (IReadOnlyList<AppUser>)t.Result);
+    }
 
-    public Task<int> CountAsync() => db.Users.CountAsync();
+    public Task<int> CountAsync(UserQuery query) =>
+        ApplyFilters(db.Users.AsQueryable(), query).CountAsync();
+
+    private IQueryable<AppUser> ApplyFilters(IQueryable<AppUser> q, UserQuery query)
+    {
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var term = query.Search.Trim();
+            q = q.Where(u =>
+                (u.Email        != null && EF.Functions.ILike(u.Email, "%" + term + "%")) ||
+                (u.PhoneNumber  != null && EF.Functions.ILike(u.PhoneNumber, "%" + term + "%")) ||
+                u.Id == term);
+        }
+
+        if (query.Roles.Count > 0)
+        {
+            q = q.Where(u => db.UserRoles
+                .Join(db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
+                .Any(x => x.UserId == u.Id && query.Roles.Contains(x.Name!)));
+        }
+
+        if (query.RestaurantId.HasValue)
+        {
+            q = q.Where(u => u.AssignedRestaurants.Any(r => r.Id == query.RestaurantId.Value));
+        }
+
+        return q;
+    }
 
     public Task<AppUser?> GetByIdAsync(string id) =>
         userManager.FindByIdAsync(id)!;
