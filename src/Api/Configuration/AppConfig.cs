@@ -27,7 +27,7 @@ public static class AppConfig
         app.UseAuthorization();
         app.MapControllers();
 
-        app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+        app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
         return app;
     }
