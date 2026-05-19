@@ -1,7 +1,6 @@
 using Api.Controllers;
 using Core.Domain.Enums;
 using Core.DTOs.Categories;
-using Core.DTOs.Common;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -14,8 +13,6 @@ public class AdminCategoriesControllerTests
     private Mock<ICategoryService>      _service    = null!;
     private AdminCategoriesController   _controller = null!;
 
-    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
-
     [SetUp]
     public void SetUp()
     {
@@ -24,16 +21,16 @@ public class AdminCategoriesControllerTests
     }
 
     [Test]
-    public async Task GetAll_ReturnsOkWithPagedResult()
+    public async Task GetAll_ReturnsOkWithList()
     {
         var restaurantId = Guid.NewGuid();
-        var paged        = new PagedResult<CategoryDto> { Data = [MakeDto("A"), MakeDto("B")], Total = 2, Page = 1, Limit = 20 };
-        _service.Setup(s => s.GetAllByRestaurantAsync(restaurantId, DefaultQuery)).ReturnsAsync(paged);
+        IReadOnlyList<CategoryDto> list = [MakeDto("A"), MakeDto("B")];
+        _service.Setup(s => s.GetAllByRestaurantAsync(restaurantId)).ReturnsAsync(list);
 
-        var result = await _controller.GetAll(restaurantId, DefaultQuery);
+        var result = await _controller.GetAll(restaurantId);
 
         var ok = result as OkObjectResult;
-        Assert.That(ok!.Value, Is.SameAs(paged));
+        Assert.That(ok!.Value, Is.SameAs(list));
     }
 
     [Test]

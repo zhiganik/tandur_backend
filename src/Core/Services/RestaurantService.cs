@@ -1,5 +1,4 @@
 using Core.Domain.Entities;
-using Core.DTOs.Common;
 using Core.DTOs.Restaurants;
 using Core.Interfaces;
 using Core.Interfaces.Repositories;
@@ -8,37 +7,20 @@ namespace Core.Services;
 
 public class RestaurantService(IRestaurantRepository repository) : IRestaurantService
 {
-    public async Task<PagedResult<RestaurantDto>> GetAllAsync(double? lat, double? lng, PaginationQuery query)
+    public async Task<IReadOnlyList<RestaurantDto>> GetAllAsync(double? lat, double? lng)
     {
-        var total       = await repository.CountActiveAsync();
-        var restaurants = await repository.GetPagedActiveAsync(query.Page, query.Limit);
+        var restaurants = await repository.GetAllActiveAsync();
 
-        var data = restaurants
+        return restaurants
             .Select(r => ToDto(r, lat, lng))
             .OrderBy(r => r.DistanceKm ?? double.MaxValue)
             .ToList();
-
-        return new PagedResult<RestaurantDto>
-        {
-            Data  = data,
-            Total = total,
-            Page  = query.Page,
-            Limit = query.Limit,
-        };
     }
 
-    public async Task<PagedResult<RestaurantDto>> GetAdminListAsync(PaginationQuery query)
+    public async Task<IReadOnlyList<RestaurantDto>> GetAdminListAsync()
     {
-        var total       = await repository.CountAllAsync();
-        var restaurants = await repository.GetPagedAllAsync(query.Page, query.Limit);
-
-        return new PagedResult<RestaurantDto>
-        {
-            Data  = restaurants.Select(r => ToDto(r, null, null)).ToList(),
-            Total = total,
-            Page  = query.Page,
-            Limit = query.Limit,
-        };
+        var restaurants = await repository.GetAllAsync();
+        return restaurants.Select(r => ToDto(r, null, null)).ToList();
     }
 
     public async Task<RestaurantDto?> GetByIdAsync(Guid id)
@@ -55,6 +37,7 @@ public class RestaurantService(IRestaurantRepository repository) : IRestaurantSe
             Address   = request.Address,
             Latitude  = request.Latitude,
             Longitude = request.Longitude,
+            Currency  = request.Currency,
             TimeZone  = request.TimeZone,
             OpenTime  = request.OpenTime,
             CloseTime = request.CloseTime,
@@ -73,6 +56,7 @@ public class RestaurantService(IRestaurantRepository repository) : IRestaurantSe
         restaurant.Address   = request.Address;
         restaurant.Latitude  = request.Latitude;
         restaurant.Longitude = request.Longitude;
+        restaurant.Currency  = request.Currency;
         restaurant.OpenTime  = request.OpenTime;
         restaurant.CloseTime = request.CloseTime;
 
@@ -119,6 +103,7 @@ public class RestaurantService(IRestaurantRepository repository) : IRestaurantSe
         Address    = r.Address,
         Latitude   = r.Latitude,
         Longitude  = r.Longitude,
+        Currency   = r.Currency,
         TimeZone   = r.TimeZone,
         OpenTime   = r.OpenTime,
         CloseTime  = r.CloseTime,

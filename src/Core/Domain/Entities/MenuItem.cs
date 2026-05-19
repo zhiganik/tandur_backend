@@ -9,7 +9,6 @@ public class MenuItem
     public string Description { get; set; } = string.Empty;
     public string ShortDescription { get; set; } = string.Empty;
     public decimal Price { get; set; }
-    public string Currency { get; set; } = string.Empty;
     public string? ImageUrl { get; set; }
     public bool IsAvailable { get; set; } = true;
     public bool IsActive { get; set; } = true;

@@ -13,7 +13,6 @@ public class MenuItemConfiguration : IEntityTypeConfiguration<MenuItem>
         builder.Property(m => m.Description).HasMaxLength(2000);
         builder.Property(m => m.ShortDescription).HasMaxLength(500);
         builder.Property(m => m.Price).HasPrecision(18, 2);
-        builder.Property(m => m.Currency).IsRequired().HasMaxLength(3);
         builder.Property(m => m.ImageUrl).HasMaxLength(1000);
 
         builder.HasOne(m => m.Restaurant)

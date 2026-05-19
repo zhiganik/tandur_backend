@@ -1,5 +1,4 @@
 using Core.DTOs.Categories;
-using Core.DTOs.Common;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -17,12 +16,11 @@ public class CategoriesController(ICategoryService categoryService) : Controller
 {
     [HttpGet]
     [SwaggerOperation(Summary = "List visible categories for a restaurant, ordered by sortOrder")]
-    [ProducesResponseType<PagedResult<CategoryDto>>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<IReadOnlyList<CategoryDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetVisible(Guid restaurantId, [FromQuery] PaginationQuery query)
+    public async Task<IActionResult> GetVisible(Guid restaurantId)
     {
-        var categories = await categoryService.GetVisibleByRestaurantAsync(restaurantId, query);
+        var categories = await categoryService.GetVisibleByRestaurantAsync(restaurantId);
         return Ok(categories);
     }
 }

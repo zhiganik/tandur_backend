@@ -4,10 +4,8 @@ namespace Core.Interfaces.Repositories;
 
 public interface IMenuItemRepository
 {
-    Task<IReadOnlyList<MenuItem>> GetPagedAvailableAsync(Guid restaurantId, int page, int limit);
-    Task<int>                     CountAvailableAsync(Guid restaurantId);
-    Task<IReadOnlyList<MenuItem>> GetPagedAllAsync(Guid restaurantId, int page, int limit);
-    Task<int>                     CountAllAsync(Guid restaurantId);
+    Task<IReadOnlyList<MenuItem>> GetAllAvailableAsync(Guid restaurantId);
+    Task<IReadOnlyList<MenuItem>> GetAllAsync(Guid restaurantId);
     Task<MenuItem?>               GetByIdAsync(Guid id);
     Task<MenuItem>                AddAsync(MenuItem item);
     Task                          UpdateAsync(MenuItem item);

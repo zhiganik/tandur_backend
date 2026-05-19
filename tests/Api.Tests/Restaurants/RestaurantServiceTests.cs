@@ -1,5 +1,4 @@
 using Core.Domain.Entities;
-using Core.DTOs.Common;
 using Core.DTOs.Restaurants;
 using Core.Interfaces.Repositories;
 using Core.Services;
@@ -13,8 +12,6 @@ public class RestaurantServiceTests
     private Mock<IRestaurantRepository> _repo    = null!;
     private RestaurantService           _service = null!;
 
-    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
-
     [SetUp]
     public void SetUp()
     {
@@ -24,62 +21,54 @@ public class RestaurantServiceTests
 
     // GetAllAsync
     [Test]
-    public async Task GetAllAsync_ReturnsPagedResult()
+    public async Task GetAllAsync_ReturnsActiveRestaurants()
     {
-        _repo.Setup(r => r.CountActiveAsync()).ReturnsAsync(2);
-        _repo.Setup(r => r.GetPagedActiveAsync(1, 20))
+        _repo.Setup(r => r.GetAllActiveAsync())
             .ReturnsAsync([MakeRestaurant("Active 1"), MakeRestaurant("Active 2")]);
 
-        var result = await _service.GetAllAsync(null, null, DefaultQuery);
+        var result = await _service.GetAllAsync(null, null);
 
-        Assert.That(result.Data, Has.Count.EqualTo(2));
-        Assert.That(result.Total, Is.EqualTo(2));
-        Assert.That(result.Page, Is.EqualTo(1));
-        Assert.That(result.Limit, Is.EqualTo(20));
+        Assert.That(result, Has.Count.EqualTo(2));
     }
 
     [Test]
     public async Task GetAllAsync_WithCoordinates_SortsByDistanceAscending()
     {
-        _repo.Setup(r => r.CountActiveAsync()).ReturnsAsync(2);
-        _repo.Setup(r => r.GetPagedActiveAsync(1, 20)).ReturnsAsync(
+        _repo.Setup(r => r.GetAllActiveAsync()).ReturnsAsync(
         [
             MakeRestaurant("Far",  lat: 51.51, lng: -0.13),
             MakeRestaurant("Near", lat: 43.26, lng: 76.96),
         ]);
 
-        var result = await _service.GetAllAsync(43.25, 76.95, DefaultQuery);
+        var result = await _service.GetAllAsync(43.25, 76.95);
 
-        Assert.That(result.Data[0].Name, Is.EqualTo("Near"));
-        Assert.That(result.Data[0].DistanceKm!.Value, Is.LessThan(result.Data[1].DistanceKm!.Value));
+        Assert.That(result[0].Name, Is.EqualTo("Near"));
+        Assert.That(result[0].DistanceKm!.Value, Is.LessThan(result[1].DistanceKm!.Value));
     }
 
     [Test]
     public async Task GetAllAsync_WithoutCoordinates_DistanceKmIsNull()
     {
-        _repo.Setup(r => r.CountActiveAsync()).ReturnsAsync(1);
-        _repo.Setup(r => r.GetPagedActiveAsync(1, 20)).ReturnsAsync([MakeRestaurant("R1")]);
+        _repo.Setup(r => r.GetAllActiveAsync()).ReturnsAsync([MakeRestaurant("R1")]);
 
-        var result = await _service.GetAllAsync(null, null, DefaultQuery);
+        var result = await _service.GetAllAsync(null, null);
 
-        Assert.That(result.Data[0].DistanceKm, Is.Null);
+        Assert.That(result[0].DistanceKm, Is.Null);
     }
 
     // GetAdminListAsync
     [Test]
     public async Task GetAdminListAsync_ReturnsAllRestaurants()
     {
-        _repo.Setup(r => r.CountAllAsync()).ReturnsAsync(2);
-        _repo.Setup(r => r.GetPagedAllAsync(1, 20)).ReturnsAsync(
+        _repo.Setup(r => r.GetAllAsync()).ReturnsAsync(
         [
             MakeRestaurant("Active",   isActive: true),
             MakeRestaurant("Inactive", isActive: false),
         ]);
 
-        var result = await _service.GetAdminListAsync(DefaultQuery);
+        var result = await _service.GetAdminListAsync();
 
-        Assert.That(result.Data, Has.Count.EqualTo(2));
-        Assert.That(result.Total, Is.EqualTo(2));
+        Assert.That(result, Has.Count.EqualTo(2));
     }
 
     // GetByIdAsync

@@ -25,53 +25,24 @@ public class RestaurantRepositoryTests
     public void TearDown() => _db.Dispose();
 
     [Test]
-    public async Task GetPagedActiveAsync_ReturnsOnlyActive()
+    public async Task GetAllActiveAsync_ReturnsOnlyActive()
     {
         _db.Restaurants.AddRange(MakeRestaurant("Active"), MakeRestaurant("Inactive", isActive: false));
         await _db.SaveChangesAsync();
 
-        var result = await _repo.GetPagedActiveAsync(1, 20);
+        var result = await _repo.GetAllActiveAsync();
 
         Assert.That(result, Has.Count.EqualTo(1));
         Assert.That(result[0].Name, Is.EqualTo("Active"));
     }
 
     [Test]
-    public async Task GetPagedActiveAsync_RespectsPageAndLimit()
-    {
-        for (var i = 1; i <= 5; i++) _db.Restaurants.Add(MakeRestaurant($"R{i}"));
-        await _db.SaveChangesAsync();
-
-        var result = await _repo.GetPagedActiveAsync(page: 2, limit: 2);
-
-        Assert.That(result, Has.Count.EqualTo(2));
-    }
-
-    [Test]
-    public async Task CountActiveAsync_CountsOnlyActive()
-    {
-        _db.Restaurants.AddRange(MakeRestaurant("A1"), MakeRestaurant("A2"), MakeRestaurant("I1", isActive: false));
-        await _db.SaveChangesAsync();
-
-        Assert.That(await _repo.CountActiveAsync(), Is.EqualTo(2));
-    }
-
-    [Test]
-    public async Task GetPagedAllAsync_ReturnsAll()
+    public async Task GetAllAsync_ReturnsAll()
     {
         _db.Restaurants.AddRange(MakeRestaurant("A"), MakeRestaurant("I", isActive: false));
         await _db.SaveChangesAsync();
 
-        Assert.That((await _repo.GetPagedAllAsync(1, 20)), Has.Count.EqualTo(2));
-    }
-
-    [Test]
-    public async Task CountAllAsync_CountsAll()
-    {
-        _db.Restaurants.AddRange(MakeRestaurant("A"), MakeRestaurant("B", isActive: false));
-        await _db.SaveChangesAsync();
-
-        Assert.That(await _repo.CountAllAsync(), Is.EqualTo(2));
+        Assert.That((await _repo.GetAllAsync()), Has.Count.EqualTo(2));
     }
 
     [Test]

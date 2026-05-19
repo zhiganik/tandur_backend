@@ -25,7 +25,7 @@ public class MenuItemRepositoryTests
     public void TearDown() => _db.Dispose();
 
     [Test]
-    public async Task GetPagedAvailableAsync_ReturnsOnlyActiveAndAvailableOrderedBySortOrder()
+    public async Task GetAllAvailableAsync_ReturnsOnlyActiveAndAvailableOrderedBySortOrder()
     {
         var restaurantId = Guid.NewGuid();
         var categoryId   = Guid.NewGuid();
@@ -36,42 +36,14 @@ public class MenuItemRepositoryTests
             MakeMenuItem("First",       restaurantId, categoryId, isActive: true,  isAvailable: true,  sortOrder: 1));
         await _db.SaveChangesAsync();
 
-        var result = await _repo.GetPagedAvailableAsync(restaurantId, 1, 20);
+        var result = await _repo.GetAllAvailableAsync(restaurantId);
 
         Assert.That(result, Has.Count.EqualTo(2));
         Assert.That(result[0].Name, Is.EqualTo("First"));
     }
 
     [Test]
-    public async Task GetPagedAvailableAsync_RespectsPageAndLimit()
-    {
-        var restaurantId = Guid.NewGuid();
-        var categoryId   = Guid.NewGuid();
-        for (var i = 1; i <= 5; i++)
-            _db.MenuItems.Add(MakeMenuItem($"M{i}", restaurantId, categoryId, sortOrder: i));
-        await _db.SaveChangesAsync();
-
-        var result = await _repo.GetPagedAvailableAsync(restaurantId, page: 2, limit: 2);
-
-        Assert.That(result, Has.Count.EqualTo(2));
-    }
-
-    [Test]
-    public async Task CountAvailableAsync_CountsOnlyActiveAndAvailable()
-    {
-        var restaurantId = Guid.NewGuid();
-        var categoryId   = Guid.NewGuid();
-        _db.MenuItems.AddRange(
-            MakeMenuItem("A1", restaurantId, categoryId, isActive: true,  isAvailable: true),
-            MakeMenuItem("A2", restaurantId, categoryId, isActive: true,  isAvailable: false),
-            MakeMenuItem("A3", restaurantId, categoryId, isActive: false, isAvailable: true));
-        await _db.SaveChangesAsync();
-
-        Assert.That(await _repo.CountAvailableAsync(restaurantId), Is.EqualTo(1));
-    }
-
-    [Test]
-    public async Task GetPagedAllAsync_ReturnsAllItems()
+    public async Task GetAllAsync_ReturnsAllItems()
     {
         var restaurantId = Guid.NewGuid();
         var categoryId   = Guid.NewGuid();
@@ -80,20 +52,9 @@ public class MenuItemRepositoryTests
             MakeMenuItem("Inactive", restaurantId, categoryId, isActive: false));
         await _db.SaveChangesAsync();
 
-        var result = await _repo.GetPagedAllAsync(restaurantId, 1, 20);
+        var result = await _repo.GetAllAsync(restaurantId);
 
         Assert.That(result, Has.Count.EqualTo(2));
-    }
-
-    [Test]
-    public async Task CountAllAsync_CountsAll()
-    {
-        var restaurantId = Guid.NewGuid();
-        var categoryId   = Guid.NewGuid();
-        _db.MenuItems.AddRange(MakeMenuItem("A", restaurantId, categoryId), MakeMenuItem("B", restaurantId, categoryId, isActive: false));
-        await _db.SaveChangesAsync();
-
-        Assert.That(await _repo.CountAllAsync(restaurantId), Is.EqualTo(2));
     }
 
     [Test]
@@ -150,7 +111,7 @@ public class MenuItemRepositoryTests
         {
             RestaurantId = restaurantId ?? Guid.NewGuid(),
             CategoryId   = categoryId ?? Guid.NewGuid(),
-            Name         = name, Price = 10, Currency = "EUR",
+            Name         = name, Price = 10,
             IsActive = isActive, IsAvailable = isAvailable, SortOrder = sortOrder,
         };
 }

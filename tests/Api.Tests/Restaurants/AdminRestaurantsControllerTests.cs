@@ -1,5 +1,4 @@
 using Api.Controllers;
-using Core.DTOs.Common;
 using Core.DTOs.Restaurants;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -13,8 +12,6 @@ public class AdminRestaurantsControllerTests
     private Mock<IRestaurantService>   _service    = null!;
     private AdminRestaurantsController _controller = null!;
 
-    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
-
     [SetUp]
     public void SetUp()
     {
@@ -23,15 +20,15 @@ public class AdminRestaurantsControllerTests
     }
 
     [Test]
-    public async Task GetAll_ReturnsOk_WithPagedResult()
+    public async Task GetAll_ReturnsOk_WithList()
     {
-        var paged = new PagedResult<RestaurantDto> { Data = [MakeDto("A"), MakeDto("B")], Total = 2, Page = 1, Limit = 20 };
-        _service.Setup(s => s.GetAdminListAsync(DefaultQuery)).ReturnsAsync(paged);
+        IReadOnlyList<RestaurantDto> list = [MakeDto("A"), MakeDto("B")];
+        _service.Setup(s => s.GetAdminListAsync()).ReturnsAsync(list);
 
-        var result = await _controller.GetAll(DefaultQuery);
+        var result = await _controller.GetAll();
 
         var ok = result as OkObjectResult;
-        Assert.That(ok!.Value, Is.SameAs(paged));
+        Assert.That(ok!.Value, Is.SameAs(list));
     }
 
     [Test]
@@ -58,7 +55,7 @@ public class AdminRestaurantsControllerTests
         var request = new CreateRestaurantRequest
         {
             Name = "New", Address = "Addr", Latitude = 0, Longitude = 0,
-            TimeZone = "UTC", OpenTime = TimeSpan.FromHours(9), CloseTime = TimeSpan.FromHours(22),
+            Currency = "USD", TimeZone = "UTC", OpenTime = TimeSpan.FromHours(9), CloseTime = TimeSpan.FromHours(22),
         };
         _service.Setup(s => s.CreateAsync(request)).ReturnsAsync(dto);
 

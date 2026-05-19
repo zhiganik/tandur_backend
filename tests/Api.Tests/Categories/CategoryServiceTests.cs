@@ -1,7 +1,6 @@
 using Core.Domain.Entities;
 using Core.Domain.Enums;
 using Core.DTOs.Categories;
-using Core.DTOs.Common;
 using Core.Interfaces.Repositories;
 using Core.Services;
 using Moq;
@@ -14,8 +13,6 @@ public class CategoryServiceTests
     private Mock<ICategoryRepository> _repo    = null!;
     private CategoryService           _service = null!;
 
-    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
-
     [SetUp]
     public void SetUp()
     {
@@ -25,17 +22,15 @@ public class CategoryServiceTests
 
     // GetVisibleByRestaurantAsync
     [Test]
-    public async Task GetVisibleByRestaurantAsync_ReturnsMappedPagedResult()
+    public async Task GetVisibleByRestaurantAsync_ReturnsMappedList()
     {
         var restaurantId = Guid.NewGuid();
-        _repo.Setup(r => r.CountVisibleAsync(restaurantId)).ReturnsAsync(2);
-        _repo.Setup(r => r.GetPagedVisibleAsync(restaurantId, 1, 20))
+        _repo.Setup(r => r.GetVisibleByRestaurantAsync(restaurantId))
             .ReturnsAsync([MakeCategory("Starters", restaurantId), MakeCategory("Mains", restaurantId)]);
 
-        var result = await _service.GetVisibleByRestaurantAsync(restaurantId, DefaultQuery);
+        var result = await _service.GetVisibleByRestaurantAsync(restaurantId);
 
-        Assert.That(result.Data, Has.Count.EqualTo(2));
-        Assert.That(result.Total, Is.EqualTo(2));
+        Assert.That(result, Has.Count.EqualTo(2));
     }
 
     // GetAllByRestaurantAsync
@@ -43,14 +38,12 @@ public class CategoryServiceTests
     public async Task GetAllByRestaurantAsync_ReturnsAllIncludingHidden()
     {
         var restaurantId = Guid.NewGuid();
-        _repo.Setup(r => r.CountAllAsync(restaurantId)).ReturnsAsync(2);
-        _repo.Setup(r => r.GetPagedAllAsync(restaurantId, 1, 20))
+        _repo.Setup(r => r.GetAllByRestaurantAsync(restaurantId))
             .ReturnsAsync([MakeCategory("Visible", restaurantId), MakeCategory("Hidden", restaurantId, isVisible: false)]);
 
-        var result = await _service.GetAllByRestaurantAsync(restaurantId, DefaultQuery);
+        var result = await _service.GetAllByRestaurantAsync(restaurantId);
 
-        Assert.That(result.Data, Has.Count.EqualTo(2));
-        Assert.That(result.Total, Is.EqualTo(2));
+        Assert.That(result, Has.Count.EqualTo(2));
     }
 
     // GetByIdAsync

@@ -1,12 +1,11 @@
-using Core.DTOs.Common;
 using Core.DTOs.MenuItems;
 
 namespace Core.Interfaces;
 
 public interface IMenuItemService
 {
-    Task<MenuDto>      GetMenuAsync(Guid restaurantId, PaginationQuery query);
-    Task<MenuDto>      GetAdminMenuAsync(Guid restaurantId, PaginationQuery query);
+    Task<MenuDto>      GetMenuAsync(Guid restaurantId);
+    Task<MenuDto>      GetAdminMenuAsync(Guid restaurantId);
     Task<MenuItemDto?> GetByIdAsync(Guid id);
     Task<MenuItemDto?> GetAdminByIdAsync(Guid id);
     Task<MenuItemDto>  CreateAsync(CreateMenuItemRequest request);

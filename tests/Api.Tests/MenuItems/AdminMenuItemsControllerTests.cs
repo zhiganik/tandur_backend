@@ -1,5 +1,4 @@
 using Api.Controllers;
-using Core.DTOs.Common;
 using Core.DTOs.MenuItems;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -13,8 +12,6 @@ public class AdminMenuItemsControllerTests
     private Mock<IMenuItemService>      _service    = null!;
     private AdminMenuItemsController    _controller = null!;
 
-    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
-
     [SetUp]
     public void SetUp()
     {
@@ -27,9 +24,9 @@ public class AdminMenuItemsControllerTests
     {
         var restaurantId = Guid.NewGuid();
         var menu         = new MenuDto();
-        _service.Setup(s => s.GetAdminMenuAsync(restaurantId, DefaultQuery)).ReturnsAsync(menu);
+        _service.Setup(s => s.GetAdminMenuAsync(restaurantId)).ReturnsAsync(menu);
 
-        var result = await _controller.GetMenu(restaurantId, DefaultQuery);
+        var result = await _controller.GetMenu(restaurantId);
 
         var ok = result as OkObjectResult;
         Assert.That(ok!.Value, Is.SameAs(menu));
@@ -59,7 +56,7 @@ public class AdminMenuItemsControllerTests
         var request = new CreateMenuItemRequest
         {
             RestaurantId = Guid.NewGuid(), CategoryId = Guid.NewGuid(),
-            Name = "Burger", Price = 12, Currency = "EUR",
+            Name = "Burger", Price = 12,
         };
         _service.Setup(s => s.CreateAsync(request)).ReturnsAsync(dto);
 
@@ -78,7 +75,7 @@ public class AdminMenuItemsControllerTests
 
         Assert.That(await _controller.Update(id, new UpdateMenuItemRequest
         {
-            Name = "U", Price = 10, Currency = "EUR", CategoryId = Guid.NewGuid(),
+            Name = "U", Price = 10, CategoryId = Guid.NewGuid(),
         }), Is.InstanceOf<OkObjectResult>());
     }
 
@@ -90,7 +87,7 @@ public class AdminMenuItemsControllerTests
 
         Assert.That(await _controller.Update(Guid.NewGuid(), new UpdateMenuItemRequest
         {
-            Name = "X", Price = 1, Currency = "EUR", CategoryId = Guid.NewGuid(),
+            Name = "X", Price = 1, CategoryId = Guid.NewGuid(),
         }), Is.InstanceOf<NotFoundResult>());
     }
 
@@ -121,5 +118,5 @@ public class AdminMenuItemsControllerTests
     }
 
     private static MenuItemDto MakeDto(string name, Guid? id = null) =>
-        new() { Id = id ?? Guid.NewGuid(), RestaurantId = Guid.NewGuid(), CategoryId = Guid.NewGuid(), Name = name, Currency = "EUR", Price = 10 };
+        new() { Id = id ?? Guid.NewGuid(), RestaurantId = Guid.NewGuid(), CategoryId = Guid.NewGuid(), Name = name, Price = 10 };
 }

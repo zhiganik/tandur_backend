@@ -1,5 +1,4 @@
 using Core.Domain.Entities;
-using Core.DTOs.Common;
 using Core.DTOs.MenuItems;
 using Core.Interfaces;
 using Core.Interfaces.Repositories;
@@ -16,8 +15,6 @@ public class MenuItemServiceTests
     private Mock<IStorageService>     _storage      = null!;
     private MenuItemService           _service      = null!;
 
-    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
-
     [SetUp]
     public void SetUp()
     {
@@ -29,38 +26,34 @@ public class MenuItemServiceTests
 
     // GetMenuAsync
     [Test]
-    public async Task GetMenuAsync_ReturnsVisibleCategoriesAndPagedAvailableItems()
+    public async Task GetMenuAsync_ReturnsVisibleCategoriesAndAvailableItems()
     {
         var restaurantId = Guid.NewGuid();
         _categoryRepo.Setup(r => r.GetVisibleByRestaurantAsync(restaurantId))
             .ReturnsAsync([MakeCategory("Hot"), MakeCategory("Cold")]);
-        _menuRepo.Setup(r => r.CountAvailableAsync(restaurantId)).ReturnsAsync(2);
-        _menuRepo.Setup(r => r.GetPagedAvailableAsync(restaurantId, 1, 20))
+        _menuRepo.Setup(r => r.GetAllAvailableAsync(restaurantId))
             .ReturnsAsync([MakeMenuItem("Soup"), MakeMenuItem("Salad")]);
 
-        var result = await _service.GetMenuAsync(restaurantId, DefaultQuery);
+        var result = await _service.GetMenuAsync(restaurantId);
 
         Assert.That(result.Categories, Has.Count.EqualTo(2));
-        Assert.That(result.Items.Data, Has.Count.EqualTo(2));
-        Assert.That(result.Items.Total, Is.EqualTo(2));
-        Assert.That(result.Items.Page, Is.EqualTo(1));
+        Assert.That(result.Items, Has.Count.EqualTo(2));
     }
 
     // GetAdminMenuAsync
     [Test]
-    public async Task GetAdminMenuAsync_ReturnsAllCategoriesAndPagedItems()
+    public async Task GetAdminMenuAsync_ReturnsAllCategoriesAndAllItems()
     {
         var restaurantId = Guid.NewGuid();
         _categoryRepo.Setup(r => r.GetAllByRestaurantAsync(restaurantId))
             .ReturnsAsync([MakeCategory("Visible"), MakeCategory("Hidden")]);
-        _menuRepo.Setup(r => r.CountAllAsync(restaurantId)).ReturnsAsync(2);
-        _menuRepo.Setup(r => r.GetPagedAllAsync(restaurantId, 1, 20))
+        _menuRepo.Setup(r => r.GetAllAsync(restaurantId))
             .ReturnsAsync([MakeMenuItem("Available"), MakeMenuItem("Unavailable")]);
 
-        var result = await _service.GetAdminMenuAsync(restaurantId, DefaultQuery);
+        var result = await _service.GetAdminMenuAsync(restaurantId);
 
         Assert.That(result.Categories, Has.Count.EqualTo(2));
-        Assert.That(result.Items.Total, Is.EqualTo(2));
+        Assert.That(result.Items, Has.Count.EqualTo(2));
     }
 
     // GetByIdAsync
@@ -103,7 +96,7 @@ public class MenuItemServiceTests
         var result = await _service.CreateAsync(new CreateMenuItemRequest
         {
             RestaurantId = Guid.NewGuid(), CategoryId = Guid.NewGuid(),
-            Name = "Burger", Price = 12.50m, Currency = "EUR",
+            Name = "Burger", Price = 12.50m,
         });
 
         Assert.That(result.Name, Is.EqualTo("Burger"));
@@ -120,7 +113,7 @@ public class MenuItemServiceTests
 
         var result = await _service.UpdateAsync(item.Id, new UpdateMenuItemRequest
         {
-            Name = "New", Price = 15, Currency = "USD", CategoryId = Guid.NewGuid(), IsAvailable = false,
+            Name = "New", Price = 15, CategoryId = Guid.NewGuid(), IsAvailable = false,
         });
 
         Assert.That(result!.Name, Is.EqualTo("New"));
@@ -134,7 +127,7 @@ public class MenuItemServiceTests
 
         Assert.That(await _service.UpdateAsync(Guid.NewGuid(), new UpdateMenuItemRequest
         {
-            Name = "X", Price = 1, Currency = "EUR", CategoryId = Guid.NewGuid(),
+            Name = "X", Price = 1, CategoryId = Guid.NewGuid(),
         }), Is.Null);
     }
 
@@ -190,7 +183,7 @@ public class MenuItemServiceTests
         new()
         {
             RestaurantId = Guid.NewGuid(), CategoryId = Guid.NewGuid(),
-            Name = name, Price = price, Currency = "EUR",
+            Name = name, Price = price,
             IsActive = isActive, IsAvailable = isAvailable,
         };
 }

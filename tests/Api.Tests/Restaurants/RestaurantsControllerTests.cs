@@ -1,5 +1,4 @@
 using Api.Controllers;
-using Core.DTOs.Common;
 using Core.DTOs.Restaurants;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -13,8 +12,6 @@ public class RestaurantsControllerTests
     private Mock<IRestaurantService> _service    = null!;
     private RestaurantsController    _controller = null!;
 
-    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
-
     [SetUp]
     public void SetUp()
     {
@@ -23,26 +20,26 @@ public class RestaurantsControllerTests
     }
 
     [Test]
-    public async Task GetAll_ReturnsOk_WithPagedResult()
+    public async Task GetAll_ReturnsOk_WithList()
     {
-        var paged = new PagedResult<RestaurantDto> { Data = [MakeDto("R1"), MakeDto("R2")], Total = 2, Page = 1, Limit = 20 };
-        _service.Setup(s => s.GetAllAsync(null, null, DefaultQuery)).ReturnsAsync(paged);
+        IReadOnlyList<RestaurantDto> list = [MakeDto("R1"), MakeDto("R2")];
+        _service.Setup(s => s.GetAllAsync(null, null)).ReturnsAsync(list);
 
-        var result = await _controller.GetAll(null, null, DefaultQuery);
+        var result = await _controller.GetAll(null, null);
 
         var ok = result as OkObjectResult;
-        Assert.That(ok!.Value, Is.SameAs(paged));
+        Assert.That(ok!.Value, Is.SameAs(list));
     }
 
     [Test]
     public async Task GetAll_PassesCoordinatesToService()
     {
-        _service.Setup(s => s.GetAllAsync(43.25, 76.95, DefaultQuery))
-            .ReturnsAsync(new PagedResult<RestaurantDto>());
+        _service.Setup(s => s.GetAllAsync(43.25, 76.95))
+            .ReturnsAsync(new List<RestaurantDto>());
 
-        await _controller.GetAll(43.25, 76.95, DefaultQuery);
+        await _controller.GetAll(43.25, 76.95);
 
-        _service.Verify(s => s.GetAllAsync(43.25, 76.95, DefaultQuery), Times.Once);
+        _service.Verify(s => s.GetAllAsync(43.25, 76.95), Times.Once);
     }
 
     [Test]

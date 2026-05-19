@@ -1,6 +1,5 @@
 using Core.Domain.Entities;
 using Core.DTOs.Categories;
-using Core.DTOs.Common;
 using Core.DTOs.MenuItems;
 using Core.Interfaces;
 using Core.Interfaces.Repositories;
@@ -9,41 +8,27 @@ namespace Core.Services;
 
 public class MenuItemService(IMenuItemRepository menuItemRepo, ICategoryRepository categoryRepo, IStorageService storageService) : IMenuItemService
 {
-    public async Task<MenuDto> GetMenuAsync(Guid restaurantId, PaginationQuery query)
+    public async Task<MenuDto> GetMenuAsync(Guid restaurantId)
     {
         var categories = await categoryRepo.GetVisibleByRestaurantAsync(restaurantId);
-        var total      = await menuItemRepo.CountAvailableAsync(restaurantId);
-        var items      = await menuItemRepo.GetPagedAvailableAsync(restaurantId, query.Page, query.Limit);
+        var items      = await menuItemRepo.GetAllAvailableAsync(restaurantId);
 
         return new MenuDto
         {
             Categories = categories.Select(ToCategoryDto).ToList(),
-            Items      = new PagedResult<MenuItemDto>
-            {
-                Data  = items.Select(ToMenuItemDto).ToList(),
-                Total = total,
-                Page  = query.Page,
-                Limit = query.Limit,
-            },
+            Items      = items.Select(ToMenuItemDto).ToList(),
         };
     }
 
-    public async Task<MenuDto> GetAdminMenuAsync(Guid restaurantId, PaginationQuery query)
+    public async Task<MenuDto> GetAdminMenuAsync(Guid restaurantId)
     {
         var categories = await categoryRepo.GetAllByRestaurantAsync(restaurantId);
-        var total      = await menuItemRepo.CountAllAsync(restaurantId);
-        var items      = await menuItemRepo.GetPagedAllAsync(restaurantId, query.Page, query.Limit);
+        var items      = await menuItemRepo.GetAllAsync(restaurantId);
 
         return new MenuDto
         {
             Categories = categories.Select(ToCategoryDto).ToList(),
-            Items      = new PagedResult<MenuItemDto>
-            {
-                Data  = items.Select(ToMenuItemDto).ToList(),
-                Total = total,
-                Page  = query.Page,
-                Limit = query.Limit,
-            },
+            Items      = items.Select(ToMenuItemDto).ToList(),
         };
     }
 
@@ -69,7 +54,6 @@ public class MenuItemService(IMenuItemRepository menuItemRepo, ICategoryReposito
             Description      = request.Description,
             ShortDescription = request.ShortDescription,
             Price            = request.Price,
-            Currency         = request.Currency,
             IsAvailable      = request.IsAvailable,
             SortOrder        = request.SortOrder,
         };
@@ -87,7 +71,6 @@ public class MenuItemService(IMenuItemRepository menuItemRepo, ICategoryReposito
         item.Description      = request.Description;
         item.ShortDescription = request.ShortDescription;
         item.Price            = request.Price;
-        item.Currency         = request.Currency;
         item.CategoryId       = request.CategoryId;
         item.SortOrder        = request.SortOrder;
         item.IsAvailable      = request.IsAvailable;
@@ -171,7 +154,6 @@ public class MenuItemService(IMenuItemRepository menuItemRepo, ICategoryReposito
         Description      = m.Description,
         ShortDescription = m.ShortDescription,
         Price            = m.Price,
-        Currency         = m.Currency,
         ImageUrl         = m.ImageUrl,
         IsAvailable      = m.IsAvailable,
         IsActive         = m.IsActive,

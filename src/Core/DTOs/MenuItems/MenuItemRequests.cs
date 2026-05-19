@@ -8,7 +8,6 @@ public class CreateMenuItemRequest
     public string Description { get; init; } = string.Empty;
     public string ShortDescription { get; init; } = string.Empty;
     public decimal Price { get; init; }
-    public string Currency { get; init; } = string.Empty;
     public bool IsAvailable { get; init; } = true;
     public int SortOrder { get; init; }
 }
@@ -19,7 +18,6 @@ public class UpdateMenuItemRequest
     public string Description { get; init; } = string.Empty;
     public string ShortDescription { get; init; } = string.Empty;
     public decimal Price { get; init; }
-    public string Currency { get; init; } = string.Empty;
     public Guid CategoryId { get; init; }
     public int SortOrder { get; init; }
     public bool IsAvailable { get; init; }

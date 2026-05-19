@@ -1,7 +1,6 @@
 using Core.Domain.Entities;
 using Core.Domain.Enums;
 using Core.DTOs.Categories;
-using Core.DTOs.Common;
 using Core.Interfaces;
 using Core.Interfaces.Repositories;
 
@@ -9,32 +8,16 @@ namespace Core.Services;
 
 public class CategoryService(ICategoryRepository repository) : ICategoryService
 {
-    public async Task<PagedResult<CategoryDto>> GetVisibleByRestaurantAsync(Guid restaurantId, PaginationQuery query)
+    public async Task<IReadOnlyList<CategoryDto>> GetVisibleByRestaurantAsync(Guid restaurantId)
     {
-        var total = await repository.CountVisibleAsync(restaurantId);
-        var categories = await repository.GetPagedVisibleAsync(restaurantId, query.Page, query.Limit);
-
-        return new PagedResult<CategoryDto>
-        {
-            Data  = categories.Select(ToDto).ToList(),
-            Total = total,
-            Page  = query.Page,
-            Limit = query.Limit,
-        };
+        var categories = await repository.GetVisibleByRestaurantAsync(restaurantId);
+        return categories.Select(ToDto).ToList();
     }
 
-    public async Task<PagedResult<CategoryDto>> GetAllByRestaurantAsync(Guid restaurantId, PaginationQuery query)
+    public async Task<IReadOnlyList<CategoryDto>> GetAllByRestaurantAsync(Guid restaurantId)
     {
-        var total = await repository.CountAllAsync(restaurantId);
-        var categories = await repository.GetPagedAllAsync(restaurantId, query.Page, query.Limit);
-
-        return new PagedResult<CategoryDto>
-        {
-            Data  = categories.Select(ToDto).ToList(),
-            Total = total,
-            Page  = query.Page,
-            Limit = query.Limit,
-        };
+        var categories = await repository.GetAllByRestaurantAsync(restaurantId);
+        return categories.Select(ToDto).ToList();
     }
 
     public async Task<CategoryDto?> GetByIdAsync(Guid id)

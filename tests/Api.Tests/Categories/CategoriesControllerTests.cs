@@ -1,6 +1,5 @@
 using Api.Controllers;
 using Core.DTOs.Categories;
-using Core.DTOs.Common;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -13,8 +12,6 @@ public class CategoriesControllerTests
     private Mock<ICategoryService> _service    = null!;
     private CategoriesController   _controller = null!;
 
-    private static readonly PaginationQuery DefaultQuery = new() { Page = 1, Limit = 20 };
-
     [SetUp]
     public void SetUp()
     {
@@ -23,28 +20,28 @@ public class CategoriesControllerTests
     }
 
     [Test]
-    public async Task GetVisible_ReturnsOkWithPagedResult()
+    public async Task GetVisible_ReturnsOkWithList()
     {
         var restaurantId = Guid.NewGuid();
-        var paged        = new PagedResult<CategoryDto> { Data = [MakeDto("Starters"), MakeDto("Mains")], Total = 2, Page = 1, Limit = 20 };
-        _service.Setup(s => s.GetVisibleByRestaurantAsync(restaurantId, DefaultQuery)).ReturnsAsync(paged);
+        IReadOnlyList<CategoryDto> list = [MakeDto("Starters"), MakeDto("Mains")];
+        _service.Setup(s => s.GetVisibleByRestaurantAsync(restaurantId)).ReturnsAsync(list);
 
-        var result = await _controller.GetVisible(restaurantId, DefaultQuery);
+        var result = await _controller.GetVisible(restaurantId);
 
         var ok = result as OkObjectResult;
-        Assert.That(ok!.Value, Is.SameAs(paged));
+        Assert.That(ok!.Value, Is.SameAs(list));
     }
 
     [Test]
-    public async Task GetVisible_PassesQueryToService()
+    public async Task GetVisible_PassesRestaurantIdToService()
     {
         var restaurantId = Guid.NewGuid();
-        _service.Setup(s => s.GetVisibleByRestaurantAsync(restaurantId, DefaultQuery))
-            .ReturnsAsync(new PagedResult<CategoryDto>());
+        _service.Setup(s => s.GetVisibleByRestaurantAsync(restaurantId))
+            .ReturnsAsync(new List<CategoryDto>());
 
-        await _controller.GetVisible(restaurantId, DefaultQuery);
+        await _controller.GetVisible(restaurantId);
 
-        _service.Verify(s => s.GetVisibleByRestaurantAsync(restaurantId, DefaultQuery), Times.Once);
+        _service.Verify(s => s.GetVisibleByRestaurantAsync(restaurantId), Times.Once);
     }
 
     private static CategoryDto MakeDto(string name) =>

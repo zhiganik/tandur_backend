@@ -6,29 +6,19 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class MenuItemRepository(AppDbContext db) : IMenuItemRepository
 {
-    public Task<IReadOnlyList<MenuItem>> GetPagedAvailableAsync(Guid restaurantId, int page, int limit) =>
+    public Task<IReadOnlyList<MenuItem>> GetAllAvailableAsync(Guid restaurantId) =>
         db.MenuItems
             .Where(m => m.RestaurantId == restaurantId && m.IsActive && m.IsAvailable)
             .OrderBy(m => m.SortOrder)
-            .Skip((page - 1) * limit)
-            .Take(limit)
             .ToListAsync()
             .ContinueWith(t => (IReadOnlyList<MenuItem>)t.Result);
 
-    public Task<int> CountAvailableAsync(Guid restaurantId) =>
-        db.MenuItems.CountAsync(m => m.RestaurantId == restaurantId && m.IsActive && m.IsAvailable);
-
-    public Task<IReadOnlyList<MenuItem>> GetPagedAllAsync(Guid restaurantId, int page, int limit) =>
+    public Task<IReadOnlyList<MenuItem>> GetAllAsync(Guid restaurantId) =>
         db.MenuItems
             .Where(m => m.RestaurantId == restaurantId)
             .OrderBy(m => m.SortOrder)
-            .Skip((page - 1) * limit)
-            .Take(limit)
             .ToListAsync()
             .ContinueWith(t => (IReadOnlyList<MenuItem>)t.Result);
-
-    public Task<int> CountAllAsync(Guid restaurantId) =>
-        db.MenuItems.CountAsync(m => m.RestaurantId == restaurantId);
 
     public Task<MenuItem?> GetByIdAsync(Guid id) =>
         db.MenuItems.FindAsync(id).AsTask()!;

@@ -25,7 +25,7 @@ public class CategoryRepositoryTests
     public void TearDown() => _db.Dispose();
 
     [Test]
-    public async Task GetPagedVisibleAsync_ReturnsOnlyVisibleOrderedBySortOrder()
+    public async Task GetVisibleByRestaurantAsync_ReturnsOnlyVisibleOrderedBySortOrder()
     {
         var restaurantId = Guid.NewGuid();
         _db.Categories.AddRange(
@@ -34,40 +34,14 @@ public class CategoryRepositoryTests
             MakeCategory("First",  restaurantId, isVisible: true,  sortOrder: 1));
         await _db.SaveChangesAsync();
 
-        var result = await _repo.GetPagedVisibleAsync(restaurantId, 1, 20);
+        var result = await _repo.GetVisibleByRestaurantAsync(restaurantId);
 
         Assert.That(result, Has.Count.EqualTo(2));
         Assert.That(result[0].Name, Is.EqualTo("First"));
     }
 
     [Test]
-    public async Task GetPagedVisibleAsync_RespectsPageAndLimit()
-    {
-        var restaurantId = Guid.NewGuid();
-        for (var i = 1; i <= 5; i++)
-            _db.Categories.Add(MakeCategory($"C{i}", restaurantId, sortOrder: i));
-        await _db.SaveChangesAsync();
-
-        var result = await _repo.GetPagedVisibleAsync(restaurantId, page: 2, limit: 2);
-
-        Assert.That(result, Has.Count.EqualTo(2));
-    }
-
-    [Test]
-    public async Task CountVisibleAsync_CountsOnlyVisible()
-    {
-        var restaurantId = Guid.NewGuid();
-        _db.Categories.AddRange(
-            MakeCategory("V1", restaurantId, isVisible: true),
-            MakeCategory("V2", restaurantId, isVisible: true),
-            MakeCategory("H1", restaurantId, isVisible: false));
-        await _db.SaveChangesAsync();
-
-        Assert.That(await _repo.CountVisibleAsync(restaurantId), Is.EqualTo(2));
-    }
-
-    [Test]
-    public async Task GetPagedAllAsync_ReturnsAllIncludingHidden()
+    public async Task GetAllByRestaurantAsync_ReturnsAllIncludingHidden()
     {
         var restaurantId = Guid.NewGuid();
         _db.Categories.AddRange(
@@ -75,19 +49,9 @@ public class CategoryRepositoryTests
             MakeCategory("Hidden",  restaurantId, isVisible: false));
         await _db.SaveChangesAsync();
 
-        var result = await _repo.GetPagedAllAsync(restaurantId, 1, 20);
+        var result = await _repo.GetAllByRestaurantAsync(restaurantId);
 
         Assert.That(result, Has.Count.EqualTo(2));
-    }
-
-    [Test]
-    public async Task CountAllAsync_CountsAll()
-    {
-        var restaurantId = Guid.NewGuid();
-        _db.Categories.AddRange(MakeCategory("A", restaurantId), MakeCategory("B", restaurantId, isVisible: false));
-        await _db.SaveChangesAsync();
-
-        Assert.That(await _repo.CountAllAsync(restaurantId), Is.EqualTo(2));
     }
 
     [Test]
@@ -161,5 +125,5 @@ public class CategoryRepositoryTests
         new() { RestaurantId = restaurantId ?? Guid.NewGuid(), Name = name, SortOrder = sortOrder, IsVisible = isVisible };
 
     private static MenuItem MakeMenuItem(Guid categoryId, Guid restaurantId, bool isActive = true) =>
-        new() { CategoryId = categoryId, RestaurantId = restaurantId, Name = "Item", Price = 10, Currency = "EUR", IsActive = isActive };
+        new() { CategoryId = categoryId, RestaurantId = restaurantId, Name = "Item", Price = 10, IsActive = isActive };
 }
