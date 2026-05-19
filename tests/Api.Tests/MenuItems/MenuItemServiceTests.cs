@@ -91,16 +91,19 @@ public class MenuItemServiceTests
     [Test]
     public async Task CreateAsync_BuildsEntityAndCallsRepository()
     {
+        var restaurantId = Guid.NewGuid();
         _menuRepo.Setup(r => r.AddAsync(It.IsAny<MenuItem>())).ReturnsAsync((MenuItem m) => m);
+        _menuRepo.Setup(r => r.GetMaxSortOrderAsync(restaurantId)).ReturnsAsync(5);
 
         var result = await _service.CreateAsync(new CreateMenuItemRequest
         {
-            RestaurantId = Guid.NewGuid(), CategoryId = Guid.NewGuid(),
+            RestaurantId = restaurantId, CategoryId = Guid.NewGuid(),
             Name = "Burger", Price = 12.50m,
         });
 
         Assert.That(result.Name, Is.EqualTo("Burger"));
-        _menuRepo.Verify(r => r.AddAsync(It.Is<MenuItem>(m => m.Name == "Burger")), Times.Once);
+        Assert.That(result.SortOrder, Is.EqualTo(6));
+        _menuRepo.Verify(r => r.AddAsync(It.Is<MenuItem>(m => m.Name == "Burger" && m.SortOrder == 6)), Times.Once);
     }
 
     // UpdateAsync

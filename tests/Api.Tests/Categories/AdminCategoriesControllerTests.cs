@@ -55,7 +55,7 @@ public class AdminCategoriesControllerTests
     {
         var restaurantId = Guid.NewGuid();
         var dto          = MakeDto("New");
-        var request      = new CreateCategoryRequest { Name = "New", SortOrder = 0, IsVisible = true };
+        var request      = new CreateCategoryRequest { Name = "New", IsVisible = true };
         _service.Setup(s => s.CreateAsync(restaurantId, request)).ReturnsAsync(dto);
 
         var result  = await _controller.Create(restaurantId, request);

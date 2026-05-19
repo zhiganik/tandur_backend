@@ -3,7 +3,6 @@ namespace Core.DTOs.Categories;
 public class CreateCategoryRequest
 {
     public string Name { get; init; } = string.Empty;
-    public int SortOrder { get; init; }
     public bool IsVisible { get; init; } = true;
 }
 

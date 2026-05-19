@@ -12,7 +12,6 @@ public class CreateMenuItemRequestValidator : AbstractValidator<CreateMenuItemRe
         RuleFor(x => x.Description).MaximumLength(2000);
         RuleFor(x => x.ShortDescription).MaximumLength(500);
         RuleFor(x => x.Price).GreaterThan(0);
-        RuleFor(x => x.SortOrder).GreaterThanOrEqualTo(0);
     }
 }
 

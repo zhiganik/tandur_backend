@@ -28,11 +28,12 @@ public class CategoryService(ICategoryRepository repository) : ICategoryService
 
     public async Task<CategoryDto> CreateAsync(Guid restaurantId, CreateCategoryRequest request)
     {
+        var maxOrder = await repository.GetMaxSortOrderAsync(restaurantId);
         var category = new Category
         {
             RestaurantId = restaurantId,
             Name         = request.Name,
-            SortOrder    = request.SortOrder,
+            SortOrder    = maxOrder + 1,
             IsVisible    = request.IsVisible,
         };
 

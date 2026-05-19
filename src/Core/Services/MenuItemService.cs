@@ -46,6 +46,7 @@ public class MenuItemService(IMenuItemRepository menuItemRepo, ICategoryReposito
 
     public async Task<MenuItemDto> CreateAsync(CreateMenuItemRequest request)
     {
+        var maxOrder = await menuItemRepo.GetMaxSortOrderAsync(request.RestaurantId);
         var item = new MenuItem
         {
             RestaurantId     = request.RestaurantId,
@@ -55,7 +56,7 @@ public class MenuItemService(IMenuItemRepository menuItemRepo, ICategoryReposito
             ShortDescription = request.ShortDescription,
             Price            = request.Price,
             IsAvailable      = request.IsAvailable,
-            SortOrder        = request.SortOrder,
+            SortOrder        = maxOrder + 1,
         };
 
         await menuItemRepo.AddAsync(item);

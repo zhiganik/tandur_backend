@@ -20,6 +20,14 @@ public class CategoryRepository(AppDbContext db) : ICategoryRepository
             .ToListAsync()
             .ContinueWith(t => (IReadOnlyList<Category>)t.Result);
 
+    public async Task<int> GetMaxSortOrderAsync(Guid restaurantId)
+    {
+        var max = await db.Categories
+            .Where(c => c.RestaurantId == restaurantId)
+            .MaxAsync(c => (int?)c.SortOrder);
+        return max ?? 0;
+    }
+
     public Task<Category?> GetByIdAsync(Guid id) =>
         db.Categories.FindAsync(id).AsTask()!;
 

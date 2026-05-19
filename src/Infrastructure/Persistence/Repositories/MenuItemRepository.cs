@@ -20,6 +20,14 @@ public class MenuItemRepository(AppDbContext db) : IMenuItemRepository
             .ToListAsync()
             .ContinueWith(t => (IReadOnlyList<MenuItem>)t.Result);
 
+    public async Task<int> GetMaxSortOrderAsync(Guid restaurantId)
+    {
+        var max = await db.MenuItems
+            .Where(m => m.RestaurantId == restaurantId)
+            .MaxAsync(m => (int?)m.SortOrder);
+        return max ?? 0;
+    }
+
     public Task<MenuItem?> GetByIdAsync(Guid id) =>
         db.MenuItems.FindAsync(id).AsTask()!;
 

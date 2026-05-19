@@ -72,11 +72,14 @@ public class CategoryServiceTests
     {
         var restaurantId = Guid.NewGuid();
         _repo.Setup(r => r.AddAsync(It.IsAny<Category>())).ReturnsAsync((Category c) => c);
+        _repo.Setup(r => r.GetMaxSortOrderAsync(restaurantId)).ReturnsAsync(2);
 
         var result = await _service.CreateAsync(restaurantId, new CreateCategoryRequest
         {
-            Name = "Cold Dishes", SortOrder = 1, IsVisible = true,
+            Name = "Cold Dishes", IsVisible = true,
         });
+
+        Assert.That(result.SortOrder, Is.EqualTo(3));
 
         Assert.That(result.Name, Is.EqualTo("Cold Dishes"));
         Assert.That(result.RestaurantId, Is.EqualTo(restaurantId));
