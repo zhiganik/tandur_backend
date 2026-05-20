@@ -62,19 +62,23 @@ public class UserRepository(AppDbContext db, UserManager<AppUser> userManager) :
     public async Task<Dictionary<string, IReadOnlyList<string>>> GetRolesMapAsync(IEnumerable<string> userIds)
     {
         var ids = userIds.ToList();
+        if (ids.Count == 0) return [];
 
         var rawRoles = await db.UserRoles
             .Where(ur => ids.Contains(ur.UserId))
             .Join(db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
             .ToListAsync();
 
-        return ids.ToDictionary(
-            id => id,
-            id => (IReadOnlyList<string>)rawRoles
-                .Where(r => r.UserId == id)
-                .Select(r => r.Name!)
-                .ToList()
-        );
+        var map = rawRoles
+            .GroupBy(x => x.UserId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<string>)g.Select(x => x.Name!).ToList());
+
+        foreach (var id in ids)
+            map.TryAdd(id, []);
+
+        return map;
     }
 
     public async Task<IReadOnlyList<string>> GetRolesAsync(string userId)
