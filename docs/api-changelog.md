@@ -8,6 +8,7 @@ Each change is documented in its own file under `docs/changes/`. Listed newest-f
 
 | File | Summary |
 |------|---------|
+| [stripe-orders](changes/2026-05-20-stripe-orders.md) | Stripe payments — 9 new order endpoints for client and admin |
 | [user-restaurants-expanded-roles-param](changes/2026-05-20-user-restaurants-expanded-roles-param.md) | `restaurants` field expanded on user/me responses; `?role=` renamed `?roles=` ⚠️ |
 
 ---

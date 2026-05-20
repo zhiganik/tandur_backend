@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Stripe;
 
 namespace Api.Configuration;
 
@@ -36,6 +37,7 @@ public static class DependencyConfig
             .AddPostgres(configuration)
             .AddRedis(configuration)
             .AddR2Storage(configuration)
+            .AddStripe(configuration)
             .AddAppServices();
     }
 
@@ -116,6 +118,9 @@ public static class DependencyConfig
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IScheduleRepository, ScheduleRepository>();
         services.AddScoped<IScheduleService, ScheduleService>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IStripeService, StripeService>();
         return services;
     }
 
@@ -177,6 +182,15 @@ public static class DependencyConfig
                 configuration.GetConnectionString("DefaultConnection"),
                 npgsql => npgsql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
+        return services;
+    }
+
+    private static IServiceCollection AddStripe(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<StripeOptions>(configuration.GetSection("Stripe"));
+        var apiKey = configuration["Stripe:SecretKey"];
+        if (!string.IsNullOrEmpty(apiKey))
+            StripeConfiguration.ApiKey = apiKey;
         return services;
     }
 }

@@ -52,4 +52,7 @@ public class MenuItemRepository(AppDbContext db) : IMenuItemRepository
         await db.SaveChangesAsync();
         return true;
     }
+
+    public async Task<IReadOnlyList<MenuItem>> GetByIdsAsync(IReadOnlyList<Guid> ids) =>
+        await db.MenuItems.Where(m => ids.Contains(m.Id)).ToListAsync();
 }
