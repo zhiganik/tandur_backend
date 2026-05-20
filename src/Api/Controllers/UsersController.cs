@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Core.Domain.Constants;
 using Core.Domain.Entities;
 using Core.DTOs.Common;
@@ -22,8 +23,11 @@ public class UsersController(
     IRestaurantService restaurantService,
     IUserRepository userRepository,
     UserManager<AppUser> userManager,
-    IPasswordResetSender passwordResetSender) : ControllerBase
+    IPasswordResetSender passwordResetSender,
+    ILogger<UsersController> logger) : ControllerBase
 {
+    private string ActorId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown";
+
     [HttpGet]
     [Authorize(Policy = TandurPolicies.SuperAdminOnly)]
     [SwaggerOperation(Summary = "List users — search by email/phone/ID, filter by role or restaurant, sort by registration date (SuperAdmin only)")]
@@ -60,7 +64,10 @@ public class UsersController(
     public async Task<IActionResult> DeleteUser(string id)
     {
         var deleted = await userService.DeleteAsync(id);
-        return deleted ? NoContent() : NotFound();
+        if (!deleted) return NotFound();
+
+        logger.LogInformation("User {TargetUserId} deleted by {ActorId}", id, ActorId);
+        return NoContent();
     }
 
     [HttpPost("{adminId}/restaurants/{restaurantId:guid}")]
@@ -81,7 +88,11 @@ public class UsersController(
             return BadRequest(new { message = "Target user must have the Admin role." });
 
         var assigned = await restaurantService.AssignToAdminAsync(restaurantId, adminId);
-        return assigned ? NoContent() : NotFound();
+        if (!assigned) return NotFound();
+
+        logger.LogInformation("Restaurant {RestaurantId} assigned to admin {AdminId} by {ActorId}",
+            restaurantId, adminId, ActorId);
+        return NoContent();
     }
 
     [HttpDelete("{adminId}/restaurants/{restaurantId:guid}")]
@@ -98,7 +109,11 @@ public class UsersController(
             return BadRequest(new { message = "SuperAdmin already has access to all restaurants." });
 
         var unassigned = await restaurantService.UnassignFromAdminAsync(restaurantId, adminId);
-        return unassigned ? NoContent() : NotFound();
+        if (!unassigned) return NotFound();
+
+        logger.LogInformation("Restaurant {RestaurantId} unassigned from admin {AdminId} by {ActorId}",
+            restaurantId, adminId, ActorId);
+        return NoContent();
     }
 
     [HttpPost("{id}/password/reset")]
@@ -120,6 +135,8 @@ public class UsersController(
 
         var token = await userManager.GeneratePasswordResetTokenAsync(user);
         await passwordResetSender.SendAsync(user.Email!, token);
+
+        logger.LogInformation("Password reset sent for admin {TargetUserId} by {ActorId}", id, ActorId);
         return Ok(new { message = "Password reset link sent to admin's email." });
     }
 }

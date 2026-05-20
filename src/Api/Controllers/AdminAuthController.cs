@@ -21,7 +21,8 @@ public class AdminAuthController(
     UserManager<AppUser> userManager,
     JwtService jwtService,
     IRefreshTokenService refreshTokenService,
-    IAuthorizationService authorizationService) : ControllerBase
+    IAuthorizationService authorizationService,
+    ILogger<AdminAuthController> logger) : ControllerBase
 {
     [HttpPost("login")]
     [SwaggerOperation(Summary = "Admin login with email and password")]
@@ -31,20 +32,27 @@ public class AdminAuthController(
     {
         var user = await userManager.FindByEmailAsync(request.Email);
         if (user is null || !await userManager.CheckPasswordAsync(user, request.Password))
+        {
+            logger.LogWarning("Admin login failed for {Email}", request.Email);
             return Unauthorized(new { message = "Invalid email or password." });
+        }
 
         var roles = await userManager.GetRolesAsync(user);
         if (!await HasAdminAccessAsync(roles))
+        {
+            logger.LogWarning("Admin login blocked — {UserId} does not have admin role", user.Id);
             return Forbid();
+        }
 
         if (user.MustChangePassword)
         {
+            logger.LogInformation("Admin {UserId} requires password change on login", user.Id);
             var scopedToken = jwtService.GenerateToken(user, roles,
                 extraClaims: [new Claim("scope", "change_password")]);
-
             return Ok(new { requiresPasswordChange = true, token = scopedToken });
         }
 
+        logger.LogInformation("Admin {UserId} authenticated successfully", user.Id);
         return Ok(await IssueTokensAsync(user, roles));
     }
 
@@ -74,6 +82,7 @@ public class AdminAuthController(
         user.MustChangePassword = false;
         await userManager.UpdateAsync(user);
 
+        logger.LogInformation("Admin {UserId} changed password", userId);
         var roles = await userManager.GetRolesAsync(user);
         return Ok(await IssueTokensAsync(user, roles));
     }

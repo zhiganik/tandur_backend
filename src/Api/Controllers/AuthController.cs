@@ -21,7 +21,8 @@ public class AuthController(
     JwtService jwtService,
     IRefreshTokenService refreshTokenService,
     IOtpSessionService otpSessionService,
-    IUserRepository repository) : ControllerBase
+    IUserRepository repository,
+    ILogger<AuthController> logger) : ControllerBase
 {
     [HttpPost("login")]
     [SwaggerOperation(Summary = "Log in an existing user using an email-verified OTP session")]
@@ -32,13 +33,20 @@ public class AuthController(
     {
         var session = await otpSessionService.GetSessionAsync(request.SessionToken);
         if (session?.Email is null)
+        {
+            logger.LogWarning("Mobile login failed — session expired or invalid");
             return Unauthorized(new { message = "Session expired. Please start over." });
+        }
 
         var user = await userManager.FindByEmailAsync(session.Email);
         if (user is null || user.PhoneNumber != session.Phone)
+        {
+            logger.LogWarning("Mobile login failed — no account for {Email}", session.Email);
             return NotFound(new { message = "No account found. Please register." });
+        }
 
         await otpSessionService.InvalidateAsync(request.SessionToken);
+        logger.LogInformation("User {UserId} logged in via OTP", user.Id);
         return Ok(await IssueTokensAsync(user, ClientType.Mobile));
     }
 
@@ -52,13 +60,22 @@ public class AuthController(
     {
         var session = await otpSessionService.GetSessionAsync(request.SessionToken);
         if (session?.Email is null)
+        {
+            logger.LogWarning("Mobile registration failed — session expired or invalid");
             return Unauthorized(new { message = "Session expired. Please start over." });
+        }
 
         if (await repository.GetByEmailAsync(session.Email) is not null)
+        {
+            logger.LogWarning("Registration conflict — email {Email} already exists", session.Email);
             return Conflict(new { message = "This email is already registered. Please log in." });
+        }
 
         if (await repository.GetByPhoneAsync(session.Phone) is not null)
+        {
+            logger.LogWarning("Registration conflict — phone {Phone} already exists", session.Phone);
             return Conflict(new { message = "This phone number is already registered. Please log in." });
+        }
 
         var (firstName, lastName) = SplitFullName(request.FullName);
         var user = new AppUser
@@ -78,6 +95,7 @@ public class AuthController(
 
         await userManager.AddToRoleAsync(user, TandurRoles.User);
         await otpSessionService.InvalidateAsync(request.SessionToken);
+        logger.LogInformation("User {UserId} registered with email {Email}", user.Id, session.Email);
         return Ok(await IssueTokensAsync(user, ClientType.Mobile));
     }
 

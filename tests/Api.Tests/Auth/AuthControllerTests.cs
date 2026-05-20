@@ -11,6 +11,7 @@ using Core.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Api.Tests.Auth;
@@ -58,7 +59,8 @@ public class AuthControllerTests
             new JwtService(configuration),
             _refreshTokenService.Object,
             _otpSessionService.Object,
-            _repository.Object);
+            _repository.Object,
+            NullLogger<AuthController>.Instance);
     }
 
     // Login

@@ -1,4 +1,7 @@
-﻿using Serilog;
+using Api.Middleware;
+using Microsoft.AspNetCore.Diagnostics;
+using Serilog;
+using System.Security.Claims;
 
 namespace Api.Configuration;
 
@@ -6,11 +9,23 @@ public static class AppConfig
 {
     public static IApplicationBuilder Configure(this WebApplication app)
     {
-        app.UseSerilogRequestLogging();
-
-        app.UseExceptionHandler(err => err.Run(async ctx =>
+        app.UseSerilogRequestLogging(opts =>
         {
-            ctx.Response.StatusCode = 500;
+            opts.EnrichDiagnosticContext = (diagCtx, httpCtx) =>
+            {
+                var userId = httpCtx.User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId is not null)
+                    diagCtx.Set("UserId", userId);
+            };
+        });
+
+        app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
+        {
+            var ex     = ctx.Features.Get<IExceptionHandlerFeature>()?.Error;
+            var logger = ctx.RequestServices.GetRequiredService<ILogger<WebApplication>>();
+            logger.LogError(ex, "Unhandled exception on {Method} {Path}", ctx.Request.Method, ctx.Request.Path);
+
+            ctx.Response.StatusCode  = 500;
             ctx.Response.ContentType = "application/json";
             await ctx.Response.WriteAsJsonAsync(new { message = "An unexpected error occurred." });
         }));
@@ -25,6 +40,7 @@ public static class AppConfig
         app.UseHttpsRedirection();
         app.UseAuthentication();
         app.UseAuthorization();
+        app.UseMiddleware<LogEnrichmentMiddleware>();
         app.MapControllers();
 
         app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));

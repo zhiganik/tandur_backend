@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Api.Tests.Auth;
@@ -50,7 +51,8 @@ public class AdminAuthControllerTests
             _userManager.Object,
             new JwtService(configuration),
             _refreshTokenService.Object,
-            new Mock<IAuthorizationService>().Object);
+            new Mock<IAuthorizationService>().Object,
+            NullLogger<AdminAuthController>.Instance);
 
         SetUser(AdminId);
     }
