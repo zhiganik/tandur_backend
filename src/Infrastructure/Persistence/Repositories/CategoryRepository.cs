@@ -6,19 +6,17 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class CategoryRepository(AppDbContext db) : ICategoryRepository
 {
-    public Task<IReadOnlyList<Category>> GetVisibleByRestaurantAsync(Guid restaurantId) =>
-        db.Categories
+    public async Task<IReadOnlyList<Category>> GetVisibleByRestaurantAsync(Guid restaurantId) =>
+        await db.Categories
             .Where(c => c.RestaurantId == restaurantId && c.IsVisible)
             .OrderBy(c => c.SortOrder)
-            .ToListAsync()
-            .ContinueWith(t => (IReadOnlyList<Category>)t.Result);
+            .ToListAsync();
 
-    public Task<IReadOnlyList<Category>> GetAllByRestaurantAsync(Guid restaurantId) =>
-        db.Categories
+    public async Task<IReadOnlyList<Category>> GetAllByRestaurantAsync(Guid restaurantId) =>
+        await db.Categories
             .Where(c => c.RestaurantId == restaurantId)
             .OrderBy(c => c.SortOrder)
-            .ToListAsync()
-            .ContinueWith(t => (IReadOnlyList<Category>)t.Result);
+            .ToListAsync();
 
     public async Task<int> GetMaxSortOrderAsync(Guid restaurantId)
     {
@@ -38,7 +36,11 @@ public class CategoryRepository(AppDbContext db) : ICategoryRepository
         return category;
     }
 
-    public Task UpdateAsync(Category category) => db.SaveChangesAsync();
+    public Task UpdateAsync(Category category)
+    {
+        db.Categories.Update(category);
+        return db.SaveChangesAsync();
+    }
 
     public async Task<bool> DeleteAsync(Guid id)
     {

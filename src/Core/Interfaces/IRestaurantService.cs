@@ -11,8 +11,7 @@ public interface IRestaurantService
     Task<RestaurantDto?>                        UpdateAsync(Guid id, UpdateRestaurantRequest request);
     Task<RestaurantDto?>                        PatchAsync(Guid id, PatchRestaurantRequest request);
     Task<bool>                                  DeleteAsync(Guid id);
-    Task<IReadOnlyList<RestaurantSummaryDto>>   GetAllSummariesAsync();
-    Task<IReadOnlyList<RestaurantSummaryDto>>   GetSummariesForAdminAsync(string adminUserId);
+    Task<IReadOnlyList<RestaurantDto>>  GetSummariesForAdminAsync(string adminUserId);
     Task<bool>                                  AssignToAdminAsync(Guid restaurantId, string adminUserId);
     Task<bool>                                  UnassignFromAdminAsync(Guid restaurantId, string adminUserId);
 }

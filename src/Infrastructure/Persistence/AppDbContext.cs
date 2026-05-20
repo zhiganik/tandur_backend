@@ -6,7 +6,10 @@ namespace Infrastructure.Persistence;
 
 public class AppDbContext : IdentityDbContext<AppUser>
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    {
+        ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+    }
 
     public DbSet<Restaurant>                   Restaurants                   => Set<Restaurant>();
     public DbSet<Category>                     Categories                    => Set<Category>();

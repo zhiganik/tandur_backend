@@ -6,19 +6,17 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class MenuItemRepository(AppDbContext db) : IMenuItemRepository
 {
-    public Task<IReadOnlyList<MenuItem>> GetAllAvailableAsync(Guid restaurantId) =>
-        db.MenuItems
+    public async Task<IReadOnlyList<MenuItem>> GetAllAvailableAsync(Guid restaurantId) =>
+        await db.MenuItems
             .Where(m => m.RestaurantId == restaurantId && m.IsActive && m.IsAvailable)
             .OrderBy(m => m.SortOrder)
-            .ToListAsync()
-            .ContinueWith(t => (IReadOnlyList<MenuItem>)t.Result);
+            .ToListAsync();
 
-    public Task<IReadOnlyList<MenuItem>> GetAllAsync(Guid restaurantId) =>
-        db.MenuItems
+    public async Task<IReadOnlyList<MenuItem>> GetAllAsync(Guid restaurantId) =>
+        await db.MenuItems
             .Where(m => m.RestaurantId == restaurantId)
             .OrderBy(m => m.SortOrder)
-            .ToListAsync()
-            .ContinueWith(t => (IReadOnlyList<MenuItem>)t.Result);
+            .ToListAsync();
 
     public async Task<int> GetMaxSortOrderAsync(Guid restaurantId)
     {
@@ -38,7 +36,11 @@ public class MenuItemRepository(AppDbContext db) : IMenuItemRepository
         return item;
     }
 
-    public Task UpdateAsync(MenuItem item) => db.SaveChangesAsync();
+    public Task UpdateAsync(MenuItem item)
+    {
+        db.MenuItems.Update(item);
+        return db.SaveChangesAsync();
+    }
 
     public async Task<bool> SoftDeleteAsync(Guid id)
     {
@@ -46,6 +48,7 @@ public class MenuItemRepository(AppDbContext db) : IMenuItemRepository
         if (item is null) return false;
 
         item.IsActive = false;
+        db.MenuItems.Update(item);
         await db.SaveChangesAsync();
         return true;
     }

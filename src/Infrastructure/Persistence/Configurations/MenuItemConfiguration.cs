@@ -24,5 +24,13 @@ public class MenuItemConfiguration : IEntityTypeConfiguration<MenuItem>
             .WithMany(c => c.Items)
             .HasForeignKey(m => m.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // GetAllAsync: WHERE RestaurantId=X ORDER BY SortOrder
+        builder.HasIndex(m => new { m.RestaurantId, m.SortOrder })
+               .HasDatabaseName("ix_menuitems_restaurantid_sortorder");
+
+        // GetAllAvailableAsync: WHERE RestaurantId=X AND IsActive=true AND IsAvailable=true ORDER BY SortOrder
+        builder.HasIndex(m => new { m.RestaurantId, m.IsActive, m.IsAvailable, m.SortOrder })
+               .HasDatabaseName("ix_menuitems_restaurantid_available_sortorder");
     }
 }

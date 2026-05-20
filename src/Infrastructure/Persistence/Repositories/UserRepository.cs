@@ -8,18 +8,17 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class UserRepository(AppDbContext db, UserManager<AppUser> userManager) : IUserRepository
 {
-    public Task<IReadOnlyList<AppUser>> GetPagedAsync(UserQuery query)
+    public async Task<IReadOnlyList<AppUser>> GetPagedAsync(UserQuery query)
     {
-        var q       = ApplyFilters(db.Users.AsQueryable(), query);
-        var ordered = query.Sort == "asc"
+        var q = db.Users.Include(u => u.AssignedRestaurants).AsQueryable();
+        q = ApplyFilters(q, query);
+        q = query.Sort == "asc"
             ? q.OrderBy(u => u.CreatedAt)
             : q.OrderByDescending(u => u.CreatedAt);
-
-        return ordered
+        return await q
             .Skip((query.Page - 1) * query.Limit)
             .Take(query.Limit)
-            .ToListAsync()
-            .ContinueWith(t => (IReadOnlyList<AppUser>)t.Result);
+            .ToListAsync();
     }
 
     public Task<int> CountAsync(UserQuery query) =>
@@ -31,28 +30,34 @@ public class UserRepository(AppDbContext db, UserManager<AppUser> userManager) :
         {
             var term = query.Search.Trim();
             q = q.Where(u =>
-                (u.Email        != null && EF.Functions.ILike(u.Email, "%" + term + "%")) ||
-                (u.PhoneNumber  != null && EF.Functions.ILike(u.PhoneNumber, "%" + term + "%")) ||
-                u.Id == term);
+                u.Id          == term ||
+                u.Email       == term ||
+                u.PhoneNumber == term ||
+                u.FirstName.StartsWith(term) ||
+                u.LastName.StartsWith(term));
         }
 
         if (query.Roles.Count > 0)
         {
-            q = q.Where(u => db.UserRoles
-                .Join(db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
-                .Any(x => x.UserId == u.Id && query.Roles.Contains(x.Name!)));
+            var userIdsWithRole = db.UserRoles
+                .Join(db.Roles, ur => ur.RoleId, r => r.Id,
+                      (ur, r) => new { ur.UserId, r.Name })
+                .Where(x => query.Roles.Contains(x.Name!))
+                .Select(x => x.UserId);
+
+            q = q.Where(u => userIdsWithRole.Contains(u.Id));
         }
 
         if (query.RestaurantId.HasValue)
-        {
             q = q.Where(u => u.AssignedRestaurants.Any(r => r.Id == query.RestaurantId.Value));
-        }
 
         return q;
     }
 
     public Task<AppUser?> GetByIdAsync(string id) =>
-        userManager.FindByIdAsync(id)!;
+        db.Users
+            .Include(u => u.AssignedRestaurants)
+            .FirstOrDefaultAsync(u => u.Id == id);
 
     public async Task<Dictionary<string, IReadOnlyList<string>>> GetRolesMapAsync(IEnumerable<string> userIds)
     {

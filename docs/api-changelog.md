@@ -4,6 +4,14 @@ Each change is documented in its own file under `docs/changes/`. Listed newest-f
 
 ---
 
+## 2026-05-20
+
+| File | Summary |
+|------|---------|
+| [user-restaurants-expanded-roles-param](changes/2026-05-20-user-restaurants-expanded-roles-param.md) | `restaurants` field expanded on user/me responses; `?role=` renamed `?roles=` ⚠️ |
+
+---
+
 ## 2026-05-19
 
 | File | Summary |

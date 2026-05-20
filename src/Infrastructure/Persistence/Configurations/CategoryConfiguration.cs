@@ -15,5 +15,13 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .WithMany(r => r.Categories)
             .HasForeignKey(c => c.RestaurantId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // GetAllByRestaurantAsync: WHERE RestaurantId=X ORDER BY SortOrder
+        builder.HasIndex(c => new { c.RestaurantId, c.SortOrder })
+               .HasDatabaseName("ix_categories_restaurantid_sortorder");
+
+        // GetVisibleByRestaurantAsync: WHERE RestaurantId=X AND IsVisible=true ORDER BY SortOrder
+        builder.HasIndex(c => new { c.RestaurantId, c.IsVisible, c.SortOrder })
+               .HasDatabaseName("ix_categories_restaurantid_isvisible_sortorder");
     }
 }

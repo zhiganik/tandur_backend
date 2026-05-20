@@ -1,5 +1,4 @@
 using Core.Domain.Entities;
-using Core.DTOs.Common;
 using Core.DTOs.Users;
 using Core.Interfaces;
 using Core.Interfaces.Repositories;
@@ -11,26 +10,18 @@ namespace Api.Tests.Users;
 [TestFixture]
 public class UserServiceTests
 {
-    private Mock<IUserRepository>       _repo               = null!;
-    private Mock<IRefreshTokenService>  _refreshTokens      = null!;
-    private Mock<IRestaurantRepository> _restaurantRepo     = null!;
-    private UserService                 _service            = null!;
+    private Mock<IUserRepository>      _repo          = null!;
+    private Mock<IRefreshTokenService> _refreshTokens = null!;
+    private UserService                _service       = null!;
 
     private static readonly UserQuery DefaultQuery = new() { Page = 1, Limit = 20 };
 
     [SetUp]
     public void SetUp()
     {
-        _repo           = new Mock<IUserRepository>();
-        _refreshTokens  = new Mock<IRefreshTokenService>();
-        _restaurantRepo = new Mock<IRestaurantRepository>();
-        _restaurantRepo.Setup(r => r.GetByAdminsAsync(It.IsAny<IEnumerable<string>>()))
-            .ReturnsAsync(new Dictionary<string, IReadOnlyList<Core.Domain.Entities.Restaurant>>());
-        _restaurantRepo.Setup(r => r.GetAllSummariesAsync())
-            .ReturnsAsync(new List<Core.Domain.Entities.Restaurant>());
-        _restaurantRepo.Setup(r => r.GetByAdminAsync(It.IsAny<string>()))
-            .ReturnsAsync(new List<Core.Domain.Entities.Restaurant>());
-        _service = new UserService(_repo.Object, _refreshTokens.Object, _restaurantRepo.Object);
+        _repo          = new Mock<IUserRepository>();
+        _refreshTokens = new Mock<IRefreshTokenService>();
+        _service       = new UserService(_repo.Object, _refreshTokens.Object);
     }
 
     // GetPagedAsync

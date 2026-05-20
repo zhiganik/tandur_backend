@@ -17,5 +17,11 @@ public class RestaurantConfiguration : IEntityTypeConfiguration<Restaurant>
         builder.HasMany(r => r.AssignedAdmins)
                .WithMany(u => u.AssignedRestaurants)
                .UsingEntity(j => j.ToTable("AdminRestaurantAssignments"));
+
+        builder.HasIndex(r => new { r.IsActive, r.CreatedAt })
+               .HasDatabaseName("ix_restaurants_isactive_createdat");
+
+        builder.HasIndex(r => r.Name)
+               .HasDatabaseName("ix_restaurants_name");
     }
 }

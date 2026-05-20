@@ -6,16 +6,15 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class ScheduleRepository(AppDbContext db) : IScheduleRepository
 {
-    public Task<IReadOnlyList<RestaurantSchedule>> GetFullScheduleAsync(Guid restaurantId) =>
-        db.RestaurantSchedules
+    public async Task<IReadOnlyList<RestaurantSchedule>> GetFullScheduleAsync(Guid restaurantId) =>
+        await db.RestaurantSchedules
             .Where(s => s.RestaurantId == restaurantId)
             .OrderBy(s => s.DayOfWeek)
-            .ToListAsync()
-            .ContinueWith(t => (IReadOnlyList<RestaurantSchedule>)t.Result);
+            .ToListAsync();
 
     public Task<RestaurantSchedule?> GetScheduleDayAsync(Guid restaurantId, DayOfWeek day) =>
         db.RestaurantSchedules
-            .FirstOrDefaultAsync(s => s.RestaurantId == restaurantId && s.DayOfWeek == day)!;
+            .FirstOrDefaultAsync(s => s.RestaurantId == restaurantId && s.DayOfWeek == day);
 
     public async Task ReplaceFullScheduleAsync(Guid restaurantId, IReadOnlyList<RestaurantSchedule> schedule)
     {
@@ -26,7 +25,11 @@ public class ScheduleRepository(AppDbContext db) : IScheduleRepository
         await db.SaveChangesAsync();
     }
 
-    public Task UpdateScheduleDayAsync(RestaurantSchedule schedule) => db.SaveChangesAsync();
+    public Task UpdateScheduleDayAsync(RestaurantSchedule schedule)
+    {
+        db.RestaurantSchedules.Update(schedule);
+        return db.SaveChangesAsync();
+    }
 
     public async Task SeedDefaultScheduleAsync(Guid restaurantId)
     {
@@ -48,12 +51,11 @@ public class ScheduleRepository(AppDbContext db) : IScheduleRepository
         await db.SaveChangesAsync();
     }
 
-    public Task<IReadOnlyList<RestaurantScheduleOverride>> GetOverridesAsync(Guid restaurantId) =>
-        db.RestaurantScheduleOverrides
+    public async Task<IReadOnlyList<RestaurantScheduleOverride>> GetOverridesAsync(Guid restaurantId) =>
+        await db.RestaurantScheduleOverrides
             .Where(o => o.RestaurantId == restaurantId)
             .OrderBy(o => o.Date)
-            .ToListAsync()
-            .ContinueWith(t => (IReadOnlyList<RestaurantScheduleOverride>)t.Result);
+            .ToListAsync();
 
     public Task<RestaurantScheduleOverride?> GetOverrideByIdAsync(Guid id) =>
         db.RestaurantScheduleOverrides.FindAsync(id).AsTask()!;
@@ -77,7 +79,11 @@ public class ScheduleRepository(AppDbContext db) : IScheduleRepository
         return o;
     }
 
-    public Task UpdateOverrideAsync(RestaurantScheduleOverride o) => db.SaveChangesAsync();
+    public Task UpdateOverrideAsync(RestaurantScheduleOverride o)
+    {
+        db.RestaurantScheduleOverrides.Update(o);
+        return db.SaveChangesAsync();
+    }
 
     public async Task<bool> DeleteOverrideAsync(Guid id)
     {
