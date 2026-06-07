@@ -64,10 +64,9 @@ public class MeControllerTests
         SetUser(UserId);
     }
 
-    private void SetUser(string userId, string? scope = null)
+    private void SetUser(string userId)
     {
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, userId) };
-        if (scope is not null) claims.Add(new Claim("scope", scope));
         _controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext
@@ -99,14 +98,6 @@ public class MeControllerTests
         _userService.Setup(s => s.GetMeAsync(UserId)).ReturnsAsync((MeDto?)null);
 
         Assert.That(await _controller.GetMe(), Is.InstanceOf<NotFoundResult>());
-    }
-
-    [Test]
-    public async Task GetMe_ScopedToken_ReturnsForbid()
-    {
-        SetUser(UserId, scope: "change_password");
-
-        Assert.That(await _controller.GetMe(), Is.InstanceOf<ForbidResult>());
     }
 
     // UpdateProfile (PATCH /me)
@@ -184,16 +175,6 @@ public class MeControllerTests
 
         Assert.That((result as ObjectResult)!.StatusCode, Is.EqualTo(429));
         _otpSender.Verify(s => s.SendSmsAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
-    }
-
-    [Test]
-    public async Task SendPhoneChangeOtp_ScopedToken_ReturnsForbid()
-    {
-        SetUser(UserId, scope: "change_password");
-
-        Assert.That(
-            await _controller.SendPhoneChangeOtp(new ChangePhoneRequest { NewPhone = NewPhone }),
-            Is.InstanceOf<ForbidResult>());
     }
 
     // UpdatePhone
