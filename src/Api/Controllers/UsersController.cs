@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Api.Filters;
 using Core.Domain.Constants;
 using Core.Domain.Entities;
 using Core.DTOs.Common;
@@ -16,6 +17,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/admin/users")]
 [Authorize(Policy = TandurPolicies.AdminPanel)]
+[BlockScopedToken]
 [Tags("Admin › Users")]
 [Produces("application/json")]
 public class UsersController(
@@ -26,7 +28,7 @@ public class UsersController(
     IPasswordResetSender passwordResetSender,
     ILogger<UsersController> logger) : ControllerBase
 {
-    private string ActorId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown";
+    private string ActorId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
     [Authorize(Policy = TandurPolicies.SuperAdminOnly)]

@@ -1,9 +1,9 @@
 using System.Security.Claims;
+using Api.Filters;
 using Core.Domain.Constants;
 using Core.DTOs.Schedules;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -12,12 +12,12 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/admin/restaurants/{restaurantId:guid}")]
 [Authorize(Policy = TandurPolicies.AdminPanel)]
+[BlockScopedToken]
+[ServiceFilter(typeof(RequireRestaurantAccessAttribute))]
 [Tags("Admin › Schedule")]
 [Produces("application/json")]
-public class AdminScheduleController(IScheduleService scheduleService, IRestaurantService restaurantService) : ControllerBase
+public class AdminScheduleController(IScheduleService scheduleService) : ControllerBase
 {
-    // ── Weekly schedule ──────────────────────────────────────────────────────
-
     [HttpGet("schedule")]
     [SwaggerOperation(Summary = "Get full weekly schedule for a restaurant")]
     [ProducesResponseType<IReadOnlyList<ScheduleDayDto>>(StatusCodes.Status200OK)]
@@ -25,7 +25,6 @@ public class AdminScheduleController(IScheduleService scheduleService, IRestaura
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetSchedule(Guid restaurantId)
     {
-        if (!await CanManageAsync(restaurantId)) return Forbid();
         return Ok(await scheduleService.GetScheduleAsync(restaurantId));
     }
 
@@ -37,7 +36,6 @@ public class AdminScheduleController(IScheduleService scheduleService, IRestaura
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateFullSchedule(Guid restaurantId, [FromBody] UpdateFullScheduleRequest request)
     {
-        if (!await CanManageAsync(restaurantId)) return Forbid();
         return Ok(await scheduleService.UpdateFullScheduleAsync(restaurantId, request));
     }
 
@@ -50,12 +48,9 @@ public class AdminScheduleController(IScheduleService scheduleService, IRestaura
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateScheduleDay(Guid restaurantId, DayOfWeek dayOfWeek, [FromBody] UpdateScheduleDayRequest request)
     {
-        if (!await CanManageAsync(restaurantId)) return Forbid();
         var result = await scheduleService.UpdateScheduleDayAsync(restaurantId, dayOfWeek, request);
         return result is null ? NotFound() : Ok(result);
     }
-
-    // ── Overrides ─────────────────────────────────────────────────────────────
 
     [HttpGet("overrides")]
     [SwaggerOperation(Summary = "List all schedule overrides for a restaurant")]
@@ -64,7 +59,6 @@ public class AdminScheduleController(IScheduleService scheduleService, IRestaura
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetOverrides(Guid restaurantId)
     {
-        if (!await CanManageAsync(restaurantId)) return Forbid();
         return Ok(await scheduleService.GetOverridesAsync(restaurantId));
     }
 
@@ -76,7 +70,6 @@ public class AdminScheduleController(IScheduleService scheduleService, IRestaura
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateOverride(Guid restaurantId, [FromBody] CreateOverrideRequest request)
     {
-        if (!await CanManageAsync(restaurantId)) return Forbid();
         var result = await scheduleService.CreateOverrideAsync(restaurantId, request, AdminId);
         return StatusCode(StatusCodes.Status201Created, result);
     }
@@ -90,7 +83,6 @@ public class AdminScheduleController(IScheduleService scheduleService, IRestaura
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateOverride(Guid restaurantId, Guid overrideId, [FromBody] UpdateOverrideRequest request)
     {
-        if (!await CanManageAsync(restaurantId)) return Forbid();
         var result = await scheduleService.UpdateOverrideAsync(overrideId, request);
         return result is null ? NotFound() : Ok(result);
     }
@@ -103,11 +95,8 @@ public class AdminScheduleController(IScheduleService scheduleService, IRestaura
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteOverride(Guid restaurantId, Guid overrideId)
     {
-        if (!await CanManageAsync(restaurantId)) return Forbid();
         return await scheduleService.DeleteOverrideAsync(overrideId) ? NoContent() : NotFound();
     }
-
-    // ── Instant close / reopen ───────────────────────────────────────────────
 
     [HttpPost("close")]
     [SwaggerOperation(Summary = "Emergency close — creates an instant override for today (empty slots = all day, or specify reopening times)")]
@@ -117,7 +106,6 @@ public class AdminScheduleController(IScheduleService scheduleService, IRestaura
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CloseNow(Guid restaurantId, [FromBody] InstantCloseRequest request)
     {
-        if (!await CanManageAsync(restaurantId)) return Forbid();
         return Ok(await scheduleService.CloseNowAsync(restaurantId, request, AdminId));
     }
 
@@ -129,18 +117,8 @@ public class AdminScheduleController(IScheduleService scheduleService, IRestaura
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ReopenNow(Guid restaurantId)
     {
-        if (!await CanManageAsync(restaurantId)) return Forbid();
         return await scheduleService.ReopenNowAsync(restaurantId) ? NoContent() : NotFound();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
     private string AdminId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-
-    private async Task<bool> CanManageAsync(Guid restaurantId)
-    {
-        if (User.IsInRole(TandurRoles.SuperAdmin)) return true;
-        var summaries = await restaurantService.GetSummariesForAdminAsync(AdminId);
-        return summaries.Any(r => r.Id == restaurantId);
-    }
 }

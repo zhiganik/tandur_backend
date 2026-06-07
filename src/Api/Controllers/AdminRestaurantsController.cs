@@ -1,3 +1,4 @@
+using Api.Filters;
 using Core.Domain.Constants;
 using Core.DTOs.Restaurants;
 using Core.Interfaces;
@@ -11,6 +12,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/admin/restaurants")]
 [Authorize(Policy = TandurPolicies.AdminPanel)]
+[BlockScopedToken]
 [Tags("Admin › Restaurants")]
 [Produces("application/json")]
 public class AdminRestaurantsController(IRestaurantService restaurantService) : ControllerBase

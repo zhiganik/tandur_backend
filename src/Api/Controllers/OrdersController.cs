@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Api.Filters;
 using Core.DTOs.Common;
 using Core.DTOs.Orders;
 using Core.Interfaces;
@@ -12,6 +13,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/orders")]
 [Authorize]
+[BlockScopedToken]
 [Tags("Orders")]
 [Produces("application/json")]
 public class OrdersController(IOrderService orderService, ILogger<OrdersController> logger)

@@ -1,7 +1,7 @@
+using Api.Filters;
 using Core.Domain.Constants;
 using Core.DTOs.Common;
 using Core.DTOs.MenuItems;
-using Microsoft.AspNetCore.Http;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -13,6 +13,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Policy = TandurPolicies.AdminPanel)]
+[BlockScopedToken]
 [Tags("Admin › Menu")]
 [Produces("application/json")]
 public class AdminMenuItemsController(IMenuItemService menuItemService) : ControllerBase

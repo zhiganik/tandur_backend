@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Api.Filters;
 using Core.Domain.Constants;
 using Core.Domain.Entities;
 using Core.DTOs.Auth.Validators;
@@ -101,6 +102,7 @@ public static class DependencyConfig
 
     private static IServiceCollection AddAppServices(this IServiceCollection services)
     {
+        services.AddScoped<RequireRestaurantAccessAttribute>();
         services.AddScoped<JwtService>();
         services.AddScoped<IRefreshTokenService, RedisRefreshTokenService>();
         services.AddScoped<IOtpService, RedisOtpService>();

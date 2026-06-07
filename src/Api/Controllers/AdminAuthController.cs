@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Api.Filters;
 using Core.Domain.Constants;
 using Core.Domain.Entities;
 using Core.Domain.Enums;
@@ -58,19 +59,14 @@ public class AdminAuthController(
 
     [HttpPost("change-password")]
     [Authorize]
+    [RequireScope("change_password")]
     [SwaggerOperation(Summary = "Change password (required on first login)")]
     [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        var scope = User.FindFirstValue("scope");
-        if (scope != "change_password")
-            return Forbid();
-
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId is null) return Forbid();
-
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var user = await userManager.FindByIdAsync(userId);
         if (user is null) return NotFound();
 
@@ -89,6 +85,7 @@ public class AdminAuthController(
 
     [HttpPost("logout")]
     [Authorize(Policy = TandurPolicies.AdminPanel)]
+    [BlockScopedToken]
     [SwaggerOperation(Summary = "Logout — revoke current web refresh token")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

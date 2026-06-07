@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Api.Filters;
 using Core.Domain.Constants;
 using Core.Domain.Entities;
 using Core.DTOs.Auth;
@@ -7,7 +8,6 @@ using Core.DTOs.Users;
 using Core.Interfaces;
 using Core.Interfaces.Repositories;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -18,6 +18,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/me")]
 [Authorize]
+[BlockScopedToken]
 [Tags("Me")]
 [Produces("application/json")]
 public class MeController(
@@ -32,13 +33,7 @@ public class MeController(
 {
     private static readonly TimeSpan OtpExpiry = TimeSpan.FromMinutes(10);
 
-    private string? UserId => User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-    private IActionResult? BlockIfScopedToken()
-    {
-        var scope = User.FindFirstValue("scope");
-        return scope == "change_password" ? Forbid() : null;
-    }
+    private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
     [SwaggerOperation(Summary = "Get own profile")]
@@ -46,9 +41,6 @@ public class MeController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetMe()
     {
-        if (BlockIfScopedToken() is { } block) return block;
-        if (UserId is null) return Forbid();
-
         var me = await userService.GetMeAsync(UserId);
         return me is null ? NotFound() : Ok(me);
     }
@@ -60,9 +52,6 @@ public class MeController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateMeRequest request)
     {
-        if (BlockIfScopedToken() is { } block) return block;
-        if (UserId is null) return Forbid();
-
         var nameResult = await userService.UpdateNameAsync(UserId, request.FirstName, request.LastName);
         if (nameResult is not UserUpdateResult.Success) return MapResult(nameResult);
 
@@ -80,9 +69,6 @@ public class MeController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SendPhoneChangeOtp([FromBody] ChangePhoneRequest request)
     {
-        if (BlockIfScopedToken() is { } block) return block;
-        if (UserId is null) return Forbid();
-
         if (await repository.GetByPhoneAsync(request.NewPhone, excludeUserId: UserId) is not null)
             return Conflict(new { message = "This phone number is already in use." });
 
@@ -103,9 +89,6 @@ public class MeController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdatePhone([FromBody] VerifyPhoneChangeRequest request)
     {
-        if (BlockIfScopedToken() is { } block) return block;
-        if (UserId is null) return Forbid();
-
         if (await repository.GetByPhoneAsync(request.NewPhone, excludeUserId: UserId) is not null)
             return Conflict(new { message = "This phone number is already in use." });
 
@@ -122,9 +105,6 @@ public class MeController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SendEmailChangeOtp([FromBody] ChangeEmailRequest request)
     {
-        if (BlockIfScopedToken() is { } block) return block;
-        if (UserId is null) return Forbid();
-
         if (await repository.GetByEmailAsync(request.NewEmail) is { } existing && existing.Id != UserId)
             return Conflict(new { message = "This email address is already in use." });
 
@@ -145,9 +125,6 @@ public class MeController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateEmail([FromBody] VerifyEmailChangeRequest request)
     {
-        if (BlockIfScopedToken() is { } block) return block;
-        if (UserId is null) return Forbid();
-
         if (await repository.GetByEmailAsync(request.NewEmail) is { } existing && existing.Id != UserId)
             return Conflict(new { message = "This email address is already in use." });
 
@@ -164,9 +141,6 @@ public class MeController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SendPasswordResetToken()
     {
-        if (BlockIfScopedToken() is { } block) return block;
-        if (UserId is null) return Forbid();
-
         var user = await userManager.FindByIdAsync(UserId);
         if (user is null) return NotFound();
 
@@ -183,9 +157,6 @@ public class MeController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordWithTokenRequest request)
     {
-        if (BlockIfScopedToken() is { } block) return block;
-        if (UserId is null) return Forbid();
-
         var user = await userManager.FindByIdAsync(UserId);
         if (user is null) return NotFound();
 
@@ -204,9 +175,6 @@ public class MeController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SendDeleteOtp()
     {
-        if (BlockIfScopedToken() is { } block) return block;
-        if (UserId is null) return Forbid();
-
         var user = await userManager.FindByIdAsync(UserId);
         if (user is null) return NotFound();
         if (user.PhoneNumber is null)
@@ -227,9 +195,6 @@ public class MeController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest request)
     {
-        if (BlockIfScopedToken() is { } block) return block;
-        if (UserId is null) return Forbid();
-
         if (!await otpService.VerifyAsync(OtpKeys.AccountDelete(UserId), request.Code))
             return BadRequest(new { message = "Invalid or expired OTP." });
 

@@ -1,3 +1,4 @@
+using Api.Filters;
 using Core.Domain.Constants;
 using Core.Domain.Enums;
 using Core.DTOs.Categories;
@@ -12,6 +13,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Policy = TandurPolicies.AdminPanel)]
+[BlockScopedToken]
 [Tags("Admin › Categories")]
 [Produces("application/json")]
 public class AdminCategoriesController(ICategoryService categoryService) : ControllerBase

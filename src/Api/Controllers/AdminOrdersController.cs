@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Api.Filters;
 using Core.Domain.Constants;
 using Core.Domain.Enums;
 using Core.DTOs.Common;
@@ -14,6 +15,7 @@ namespace Api.Controllers;
 [ApiController]
 [Route("api/admin/orders")]
 [Authorize(Policy = TandurPolicies.AdminPanel)]
+[BlockScopedToken]
 [Tags("Admin › Orders")]
 [Produces("application/json")]
 public class AdminOrdersController(IOrderService orderService, ILogger<AdminOrdersController> logger)
